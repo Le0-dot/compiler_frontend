@@ -5,7 +5,7 @@ project(compiler_llvm)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SRC src/lexer/lexer.cpp src/main.cpp)
+set(SRC src/lexer.cpp src/main.cpp src/parser.cpp)
 
 add_executable(${PROJECT_NAME} ${SRC})
 

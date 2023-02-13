@@ -1,4 +1,4 @@
-#include "lexer/lexer.hpp"
+#include "lexer.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -24,11 +24,11 @@ auto lexer::for_file(std::string_view filename) -> lexer& {
     return true;
 }
 
-auto lexer::token() noexcept -> uint8_t {
+[[nodiscard]] auto lexer::token() noexcept -> uint8_t {
     return _current_token;
 }
 
-auto lexer::identifier() noexcept -> const std::string& {
+[[nodiscard]] auto lexer::identifier() noexcept -> std::string& {
     return _identifier;
 }
 
@@ -36,9 +36,9 @@ auto lexer::consume() noexcept -> void {
     _current_token = read_token();
 }
 
-auto lexer::read_token() noexcept -> uint8_t {
+[[nodiscard]] auto lexer::read_token() noexcept -> uint8_t {
     static char last = ' ';
-    _identifier.clear();
+    _identifier = {};
 
 
     // skip spaces and emit End Of Line tokens
@@ -59,7 +59,7 @@ auto lexer::read_token() noexcept -> uint8_t {
 	{'{', tokens::left_curly_brace},
 	{'}', tokens::right_curly_brace},
 	{',', tokens::comma},
-	{'.', tokens::dot}
+	{'.', tokens::dot},
     };
     if(auto _last = last; last != '.' && special_non_overridable.contains(last) || last == '.' && !isdigit(peek()) ) {
 	_identifier = last;
@@ -70,16 +70,21 @@ auto lexer::read_token() noexcept -> uint8_t {
     // other special symbols and their versions with '=', e.g. '<='
     char next = peek();
     bool is_singleline_comment = (last == '/' && next == '/');
-    bool is_multiline_comment = ((last == '/' && next == '*') || (last == '*' && next == '/'));
+    bool is_multiline_comment = (last == '/' && next == '*');
     bool is_comment = is_singleline_comment || is_multiline_comment;
     if(!is_comment && isspecial(last)) {
 	_identifier.push_back(last);
 	last = std::fgetc(_file.get());
-	if(next == '=') {
+	if(isspecial(last)) {
 	    _identifier.push_back(last);
 	    last = std::fgetc(_file.get());
 	}
-	return _tokens[_identifier];
+	if(last == '=') {
+	    _identifier.push_back(last);
+	    last = std::fgetc(_file.get());
+	}
+	auto token_id = _tokens[_identifier];
+	return token_id ? token_id : tokens::identifier;
     }
 
     // identifier [a-zA-Z_][a-zA-Z0-9_]*
@@ -90,6 +95,28 @@ auto lexer::read_token() noexcept -> uint8_t {
 
 	auto token_id = _tokens[_identifier];
 	return token_id ? token_id : tokens::identifier;
+    }
+
+    // character literals
+    if(last == '\'') {
+	last = std::fgetc(_file.get());
+	_identifier.push_back(last);
+	last = std::fgetc(_file.get());
+	if(last != '\'')
+	    return tokens::error;
+	return tokens::character;
+    }
+
+    // string literals
+    if(last == '\"') {
+	last = std::fgetc(_file.get());
+	while(last != '\"' && last != EOF) {
+	    _identifier.push_back(last);
+	    last = std::fgetc(_file.get());
+	}
+	if(last == EOF)
+	    return tokens::error;
+	return tokens::string;
     }
 
     // number (0x|0b|.|[0-9])[0-9._]*
@@ -156,7 +183,7 @@ auto lexer::read_token() noexcept -> uint8_t {
     return tokens::error;
 }
 
-auto lexer::peek() noexcept -> char {
+[[nodiscard]] auto lexer::peek() noexcept -> char {
     char last = std::fgetc(_file.get());
     std::ungetc(last, _file.get());
     return last;

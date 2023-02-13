@@ -19,6 +19,8 @@ namespace tokens {
 	octal,
 	binary,
 	floating,
+	character,
+	string,
 	dot,
 	comma,
 	left_parenthesis,
@@ -37,7 +39,7 @@ class lexer {
 
     std::map<std::string, uint8_t> _tokens{};
     std::unique_ptr<std::FILE, decltype(&std::fclose)> _file{stdin, std::fclose};
-    uint8_t _current_token{0};
+    uint8_t _current_token{};
     std::string _identifier{};
 
 public:
@@ -45,8 +47,8 @@ public:
 
     auto for_file(std::string_view filename) -> lexer&;
     [[nodiscard]] auto register_token(std::string_view token, uint8_t token_id) noexcept -> bool;
-    auto token() noexcept -> uint8_t;
-    auto identifier() noexcept -> const std::string&;
+    [[nodiscard]] auto token() noexcept -> uint8_t;
+    [[nodiscard]] auto identifier() noexcept -> std::string&;
     auto consume() noexcept -> void;
 
 private:
@@ -57,7 +59,7 @@ private:
     auto operator=(const lexer&) = delete;
     auto operator=(lexer&&) = delete;
 
-    auto read_token() noexcept -> uint8_t;
-    auto peek() noexcept -> char;
-    constexpr auto isspecial(char ch) noexcept -> bool;
+    [[nodiscard]] auto read_token() noexcept -> uint8_t;
+    [[nodiscard]] auto peek() noexcept -> char;
+    [[nodiscard]] constexpr auto isspecial(char ch) noexcept -> bool;
 };
