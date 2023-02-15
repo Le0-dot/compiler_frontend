@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 
 auto lexer::for_file(std::string_view filename) -> lexer& {
     _file = {std::fopen(filename.data(), "r"), std::fclose};
@@ -122,7 +123,6 @@ auto lexer::consume() noexcept -> void {
 	// handle integer numbers
 	if(last == '0') {
 	    last = std::fgetc(_file.get());
-	    _identifier.push_back(last);
 	    if(last == 'x')
 		number_type = tokens::hexadecimal;
 	    else if(last == 'b')
@@ -130,7 +130,8 @@ auto lexer::consume() noexcept -> void {
 	    else if(last >= '0' && last <= '7')
 		number_type = tokens::octal;
 	    else
-		return tokens::error;
+		return tokens::decimal;
+	    _identifier.push_back(last);
 	}
 
 	// consume types

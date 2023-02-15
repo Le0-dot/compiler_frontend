@@ -12,7 +12,7 @@ namespace ast {
 
     class visitor {
     public:
-	virtual ~visitor() = 0;
+	virtual ~visitor() = default;
 	virtual auto visit(const expression*)          -> llvm::Value* = 0;
 	virtual auto visit(const literal_expression*)  -> llvm::Value* = 0;
 	virtual auto visit(const variable_expression*) -> llvm::Value* = 0;

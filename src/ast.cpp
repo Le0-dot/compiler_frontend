@@ -7,9 +7,9 @@
 #include "ast/variable.hpp"
 #include <memory>
 
-ast::literal_expression::literal_expression(std::string&& literal, literal_types type) 
-    : _value{std::move(literal)} 
-    , _type{type} 
+ast::literal_expression::literal_expression(std::string&& literal, ast::literal_types type) 
+    : _value{std::move(literal)}
+    , _type{type}
 {}
 
 auto ast::literal_expression::accept(visitor* v) const -> llvm::Value* {

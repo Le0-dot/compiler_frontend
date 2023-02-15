@@ -20,18 +20,23 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	case tokens::octal: [[fallthrough]];
 	case tokens::binary:
 	    type = ast::literal_types::integer;
+	    break;
 	case tokens::floating:
 	    type = ast::literal_types::floating;
+	    break;
 	case tokens::character:
 	    type = ast::literal_types::character;
+	    break;
 	case tokens::string:
 	    type = ast::literal_types::string;
+	    break;
 	default:
 	    fprintf(stderr, "error: unrecognised literal type");
 	    return nullptr;
     }
+    auto literal = std::move(_lexer.identifier());
     _lexer.consume();
-    return std::make_unique<ast::literal_expression>(std::move(_lexer.identifier()), type);
+    return std::make_unique<ast::literal_expression>(std::move(literal), type);
 }
 
 // parenthesis ::= '(' expression ')'
@@ -71,6 +76,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	else
 	    return nullptr;
 
+
 	if(auto t = _lexer.token(); 
 		t != tokens::right_parenthesis && t != tokens::comma) {
 	    fprintf(stderr, "error: expected ')' or ','");
@@ -94,42 +100,43 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	case tokens::hexadecimal: [[fallthrough]];
 	case tokens::octal: [[fallthrough]];
 	case tokens::binary: [[fallthrough]];
+	case tokens::floating: [[fallthrough]];
 	case tokens::character: [[fallthrough]];
 	case tokens::string: 
 	    return parse_literal();
 	case tokens::left_parenthesis:
 	    return parse_parenthesis();
 	default:
-	    fprintf(stderr, "error: unknown token in expression");
+	    fprintf(stderr, "error: unknown token in expression: %d - \"%s\"", _lexer.token(), _lexer.identifier().data());
 	    return nullptr;
     }
 }
 
-// expression ::= primary rhsExpr
+// expression ::= primary binary
 [[nodiscard]] auto parser::parse_expression() -> std::unique_ptr<ast::expression> {
     auto lhs = parse_primary();
     if(!lhs)
 	return nullptr;
 
-    return parse_binary_rhs(0, std::move(lhs));
+    return parse_binary_rhs(1, std::move(lhs));
 }
 
 // binary ::= (op prmary)*
 [[nodiscard]] auto parser::parse_binary_rhs(uint8_t precedence, std::unique_ptr<ast::expression>&& lhs) -> std::unique_ptr<ast::expression> {
-    while(true) {
-	uint16_t current_precedence = [](){return 0;}(); // placeholder
+    while(_lexer.token() == tokens::identifier) {
+	uint16_t current_precedence = _table.get(_lexer.identifier());
 
 	if(current_precedence < precedence)
 	    return lhs;
 
-	std::string op = _lexer.identifier();
+	std::string op = std::move(_lexer.identifier());
 	_lexer.consume();
 
 	auto rhs = parse_primary();
 	if(!rhs)
 	    return nullptr;
 
-	uint16_t next_precedence = [](){return 0;}(); // placeholder
+	uint16_t next_precedence = _table.get(_lexer.identifier());
 	if(current_precedence < next_precedence) {
 	    rhs = parse_binary_rhs(current_precedence + 1, std::move(rhs));
 	    if(!rhs)
@@ -138,6 +145,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 
 	lhs = std::make_unique<ast::binary_expression>(std::move(op), std::move(lhs), std::move(rhs));
     }
+    return lhs;
 }
 
 [[nodiscard]] auto parser::parse_function() -> std::unique_ptr<ast::expression> {
@@ -153,14 +161,10 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	_lexer.consume();
     }
 
-    fprintf(stderr, "name is %s\n", name.data());
-    
     if(_lexer.token() != tokens::left_parenthesis) {
 	fprintf(stderr, "error: expected '(' in function definition");
 	return nullptr;
     }
-
-    fprintf(stderr, "found lp\n");
 
     _lexer.consume();
     std::vector<std::string> args;
@@ -170,10 +174,6 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	if(_lexer.token() == tokens::comma)
 	    _lexer.consume();
     }
-
-    for(const auto& s: args)
-	fprintf(stderr, "%s ", s.data());
-    fprintf(stderr, "\n");
 
     if(_lexer.token() != tokens::right_parenthesis) {
 	fprintf(stderr, "error: expected ')'");

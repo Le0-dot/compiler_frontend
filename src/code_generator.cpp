@@ -1,7 +1,14 @@
 #include <cstdio>
-#include <llvm/ADT/APFloat.h>
-#include <llvm/IR/Constants.h>
 
+#include <llvm/ADT/APFloat.h>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Verifier.h>
+
+#include "ast/literal.hpp"
 #include "code_generator.hpp"
 
 code_generator::code_generator(const std::string& module_name)
@@ -15,7 +22,19 @@ auto code_generator::visit(const ast::expression* expr) -> llvm::Value* {
 }
 
 auto code_generator::visit(const ast::literal_expression* expr) -> llvm::Value* {
-    return llvm::ConstantFP::get(*_context, llvm::APFloat((float)(std::stoi(expr->value()))));
+    switch (expr->type()) {
+	case ast::literal_types::integer:
+	    return llvm::ConstantInt::get(*_context, llvm::APSInt(expr->value()));
+	case ast::literal_types::floating:
+	    return llvm::ConstantFP::get(*_context, llvm::APFloat(std::stod(expr->value())));
+	case ast::literal_types::character:
+	    return nullptr;
+	case ast::literal_types::string:
+	    return nullptr;
+	default:
+	    fprintf(stderr, "error: unrecognised constant type");
+	    return nullptr;
+    }
 }
 
 auto code_generator::visit(const ast::variable_expression* expr) -> llvm::Value* {
@@ -70,5 +89,33 @@ auto code_generator::visit(const ast::call_expression* expr) -> llvm::Value* {
 }
 
 auto code_generator::visit(const ast::function_expression* expr) -> llvm::Value* {
-    // TODO
+    std::vector<llvm::Type*> args_type{expr->args().size(), llvm::Type::getDoubleTy(*_context)};
+    llvm::Type* return_type = llvm::Type::getDoubleTy(*_context);
+    llvm::FunctionType* function_type = llvm::FunctionType::get(return_type, args_type, false);
+
+    llvm::Function* function = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, expr->name(), _module.get());
+
+    // set arguments names and add fuction arguments to named values
+    _named_values.clear();
+    auto arg_it = function->args().begin();
+    auto name_it = expr->args().begin();
+    for(; arg_it != function->args().end(); ++arg_it, ++name_it) {
+	arg_it->setName(*name_it);
+	_named_values[*name_it] = &*arg_it;
+    }
+
+    // create basic block to write to
+    llvm::BasicBlock* block = llvm::BasicBlock::Create(*_context, "entry", function);
+    _builder->SetInsertPoint(block);
+
+    if(llvm::Value* return_value = visit(expr->body())) {
+	_builder->CreateRet(return_value);
+
+	llvm::verifyFunction(*function);
+
+	return function;
+    }
+
+    function->eraseFromParent();
+    return nullptr;
 }

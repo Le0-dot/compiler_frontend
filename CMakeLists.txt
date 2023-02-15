@@ -9,7 +9,7 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SRC src/lexer.cpp src/main.cpp src/parser.cpp src/operator_table.cpp src/ast.cpp)
+file(GLOB_RECURSE SRC LIST_DIRECTORIES false src/*.cpp)
 
 add_executable(${PROJECT_NAME} ${SRC})
 
