@@ -1,191 +1,189 @@
 #include <cstdio>
 #include <memory>
 
-#include "ast/binary.hpp"
-#include "ast/call.hpp"
-#include "ast/function.hpp"
-#include "ast/literal.hpp"
-#include "ast/variable.hpp"
+#include "ast.hpp"
 #include "lexer.hpp"
+#include "operator_table.hpp"
 #include "parser.hpp"
 
-namespace parser {
+parser::parser(lexer&& _lexer, operator_table&& _table) 
+    : _lexer{std::move(_lexer)}
+    , _table{std::move(_table)}
+{}
 
-    // literal_expression ::= literal
-    auto parse_literal() -> std::unique_ptr<ast::expression> {
-	ast::literal_types type;
-	switch(lexer::instance().token()) {
-	    case tokens::decimal: [[fallthrough]];
-	    case tokens::hexadecimal: [[fallthrough]];
-	    case tokens::octal: [[fallthrough]];
-	    case tokens::binary:
-		type = ast::literal_types::integer;
-	    case tokens::floating:
-		type = ast::literal_types::floating;
-	    case tokens::character:
-		type = ast::literal_types::character;
-	    case tokens::string:
-		type = ast::literal_types::string;
-	    default:
-		fprintf(stderr, "error: unrecognised literal type");
-		return nullptr;
-	}
-	lexer::instance().consume();
-	return std::make_unique<ast::literal_expression>(std::move(lexer::instance().identifier()), type);
+// literal_expression ::= literal
+[[nodiscard]] auto parser::parse_literal() -> std::unique_ptr<ast::expression> {
+    ast::literal_types type;
+    switch(_lexer.token()) {
+	case tokens::decimal: [[fallthrough]];
+	case tokens::hexadecimal: [[fallthrough]];
+	case tokens::octal: [[fallthrough]];
+	case tokens::binary:
+	    type = ast::literal_types::integer;
+	case tokens::floating:
+	    type = ast::literal_types::floating;
+	case tokens::character:
+	    type = ast::literal_types::character;
+	case tokens::string:
+	    type = ast::literal_types::string;
+	default:
+	    fprintf(stderr, "error: unrecognised literal type");
+	    return nullptr;
+    }
+    _lexer.consume();
+    return std::make_unique<ast::literal_expression>(std::move(_lexer.identifier()), type);
+}
+
+// parenthesis ::= '(' expression ')'
+[[nodiscard]] auto parser::parse_parenthesis() -> std::unique_ptr<ast::expression> {
+    _lexer.consume();
+
+    auto expr = parse_expression();
+    if(!expr)
+	return nullptr;
+
+    if(_lexer.token() != tokens::right_parenthesis) {
+	fprintf(stderr, "error: expected ')'");
+	return nullptr;
     }
 
-    // parenthesis ::= '(' expression ')'
-    auto parse_parenthesis() -> std::unique_ptr<ast::expression> {
-	lexer::instance().consume();
+    _lexer.consume();
+    return expr;
+}
 
-	auto expr = parse_expression();
-	if(!expr)
+// indentifierExpr 
+//			::= indentifier
+//			::= indentifier '(' expression* ')'
+[[nodiscard]] auto parser::parse_indentifier() -> std::unique_ptr<ast::expression> {
+    std::string identifier = _lexer.identifier();
+    _lexer.consume();
+
+    if(_lexer.token() != tokens::left_parenthesis)
+	return std::make_unique<ast::variable_expression>(std::move(identifier));
+
+    std::vector<std::unique_ptr<ast::expression>> args;
+
+    while(_lexer.token() != tokens::right_parenthesis) {
+	_lexer.consume();
+
+	if(auto arg = parse_expression())
+	    args.emplace_back(std::move(arg));
+	else
 	    return nullptr;
 
-	if(lexer::instance().token() != tokens::right_parenthesis) {
-	    fprintf(stderr, "error: expected ')'");
+	if(auto t = _lexer.token(); 
+		t != tokens::right_parenthesis && t != tokens::comma) {
+	    fprintf(stderr, "error: expected ')' or ','");
 	    return nullptr;
 	}
-
-	lexer::instance().consume();
-	return expr;
     }
+    _lexer.consume();
 
-    // indentifierExpr 
-    //			::= indentifier
-    //			::= indentifier '(' expression* ')'
-    auto parse_indentifier() -> std::unique_ptr<ast::expression> {
-	std::string identifier = lexer::instance().identifier();
-	lexer::instance().consume();
+    return std::make_unique<ast::call_expression>(std::move(identifier), std::move(args));
+}
 
-	if(lexer::instance().token() != tokens::left_parenthesis)
-	    return std::make_unique<ast::variable_expression>(std::move(identifier));
-
-	std::vector<std::unique_ptr<ast::expression>> args;
-
-	while(lexer::instance().token() != tokens::right_parenthesis) {
-	    lexer::instance().consume();
-
-	    if(auto arg = parse_expression())
-		args.emplace_back(std::move(arg));
-	    else
-		return nullptr;
-
-	    if(auto t = lexer::instance().token(); 
-		    t != tokens::right_parenthesis && t != tokens::comma) {
-		fprintf(stderr, "error: expected ')' or ','");
-		return nullptr;
-	    }
-	}
-	lexer::instance().consume();
-
-	return std::make_unique<ast::call_expression>(std::move(identifier), std::move(args));
+// primary 
+//		::= indentifierExpr
+//		::= literal
+//		::= parenthesis
+[[nodiscard]] auto parser::parse_primary() -> std::unique_ptr<ast::expression> {
+    switch (_lexer.token()) {
+	case tokens::identifier:
+	    return parse_indentifier();
+	case tokens::decimal: [[fallthrough]];
+	case tokens::hexadecimal: [[fallthrough]];
+	case tokens::octal: [[fallthrough]];
+	case tokens::binary: [[fallthrough]];
+	case tokens::character: [[fallthrough]];
+	case tokens::string: 
+	    return parse_literal();
+	case tokens::left_parenthesis:
+	    return parse_parenthesis();
+	default:
+	    fprintf(stderr, "error: unknown token in expression");
+	    return nullptr;
     }
+}
 
-    // primary 
-    //		::= indentifierExpr
-    //		::= literal
-    //		::= parenthesis
-    auto parse_primary() -> std::unique_ptr<ast::expression> {
-	switch (lexer::instance().token()) {
-	    case tokens::identifier:
-		return parse_indentifier();
-	    case tokens::decimal: [[fallthrough]];
-	    case tokens::hexadecimal: [[fallthrough]];
-	    case tokens::octal: [[fallthrough]];
-	    case tokens::binary: [[fallthrough]];
-	    case tokens::character: [[fallthrough]];
-	    case tokens::string: 
-		return parse_literal();
-	    case tokens::left_parenthesis:
-		return parse_parenthesis();
-	    default:
-		fprintf(stderr, "error: unknown token in expression");
-		return nullptr;
-	}
-    }
+// expression ::= primary rhsExpr
+[[nodiscard]] auto parser::parse_expression() -> std::unique_ptr<ast::expression> {
+    auto lhs = parse_primary();
+    if(!lhs)
+	return nullptr;
 
-    // expression ::= primary rhsExpr
-    auto parse_expression() -> std::unique_ptr<ast::expression> {
-	auto lhs = parse_primary();
-	if(!lhs)
+    return parse_binary_rhs(0, std::move(lhs));
+}
+
+// binary ::= (op prmary)*
+[[nodiscard]] auto parser::parse_binary_rhs(uint8_t precedence, std::unique_ptr<ast::expression>&& lhs) -> std::unique_ptr<ast::expression> {
+    while(true) {
+	uint16_t current_precedence = [](){return 0;}(); // placeholder
+
+	if(current_precedence < precedence)
+	    return lhs;
+
+	std::string op = _lexer.identifier();
+	_lexer.consume();
+
+	auto rhs = parse_primary();
+	if(!rhs)
 	    return nullptr;
 
-	return parse_binary_rhs(0, std::move(lhs));
-    }
-
-    // binary ::= (op prmary)*
-    auto parse_binary_rhs(uint16_t precedence, std::unique_ptr<ast::expression>&& lhs) -> std::unique_ptr<ast::expression> {
-	while(true) {
-	    uint16_t current_precedence = [](){return 0;}(); // placeholder
-
-	    if(current_precedence < precedence)
-		return lhs;
-
-	    std::string op = lexer::instance().identifier();
-	    lexer::instance().consume();
-
-	    auto rhs = parse_primary();
+	uint16_t next_precedence = [](){return 0;}(); // placeholder
+	if(current_precedence < next_precedence) {
+	    rhs = parse_binary_rhs(current_precedence + 1, std::move(rhs));
 	    if(!rhs)
 		return nullptr;
-
-	    uint16_t next_precedence = [](){return 0;}(); // placeholder
-	    if(current_precedence < next_precedence) {
-		rhs = parse_binary_rhs(current_precedence + 1, std::move(rhs));
-		if(!rhs)
-		    return nullptr;
-	    }
-
-	    lhs = std::make_unique<ast::binary_expression>(std::move(op), std::move(lhs), std::move(rhs));
 	}
+
+	lhs = std::make_unique<ast::binary_expression>(std::move(op), std::move(lhs), std::move(rhs));
+    }
+}
+
+[[nodiscard]] auto parser::parse_function() -> std::unique_ptr<ast::expression> {
+    if(_lexer.identifier() != "function") {
+	fprintf(stderr, "expected 'function' in function definition");
+	return nullptr;
+    }
+    _lexer.consume();
+
+    std::string name{};
+    if(_lexer.token() == tokens::identifier) {
+	name = std::move(_lexer.identifier());
+	_lexer.consume();
     }
 
-    auto parse_function_definition() -> std::unique_ptr<ast::expression> {
-	if(lexer::instance().identifier() != "function") {
-	    fprintf(stderr, "expected 'function' in function definition");
-	    return nullptr;
-	}
-	lexer::instance().consume();
-
-	std::string name{};
-	if(lexer::instance().token() == tokens::identifier) {
-	    name = std::move(lexer::instance().identifier());
-	    lexer::instance().consume();
-	}
-
-	fprintf(stderr, "name is %s\n", name.data());
-	
-	if(lexer::instance().token() != tokens::left_parenthesis) {
-	    fprintf(stderr, "error: expected '(' in function definition");
-	    return nullptr;
-	}
-
-	fprintf(stderr, "found lp\n");
-
-	lexer::instance().consume();
-	std::vector<std::string> args;
-	while(lexer::instance().token() == tokens::identifier) {
-	    args.emplace_back(std::move(lexer::instance().identifier()));
-	    lexer::instance().consume();
-	    if(lexer::instance().token() == tokens::comma)
-		lexer::instance().consume();
-	}
-
-	for(const auto& s: args)
-	    fprintf(stderr, "%s ", s.data());
-	fprintf(stderr, "\n");
-
-	if(lexer::instance().token() != tokens::right_parenthesis) {
-	    fprintf(stderr, "error: expected ')'");
-	    return nullptr;
-	}
-	lexer::instance().consume();
-
-	auto body = parse_expression();
-	if(!body)
-	    return nullptr;
-
-	return std::make_unique<ast::function_definition_expression>(std::move(name), std::move(args), std::move(body));
+    fprintf(stderr, "name is %s\n", name.data());
+    
+    if(_lexer.token() != tokens::left_parenthesis) {
+	fprintf(stderr, "error: expected '(' in function definition");
+	return nullptr;
     }
 
+    fprintf(stderr, "found lp\n");
+
+    _lexer.consume();
+    std::vector<std::string> args;
+    while(_lexer.token() == tokens::identifier) {
+	args.emplace_back(std::move(_lexer.identifier()));
+	_lexer.consume();
+	if(_lexer.token() == tokens::comma)
+	    _lexer.consume();
+    }
+
+    for(const auto& s: args)
+	fprintf(stderr, "%s ", s.data());
+    fprintf(stderr, "\n");
+
+    if(_lexer.token() != tokens::right_parenthesis) {
+	fprintf(stderr, "error: expected ')'");
+	return nullptr;
+    }
+    _lexer.consume();
+
+    auto body = parse_expression();
+    if(!body)
+	return nullptr;
+
+    return std::make_unique<ast::function_expression>(std::move(name), std::move(args), std::move(body));
 }

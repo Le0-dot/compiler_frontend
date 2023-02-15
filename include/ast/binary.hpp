@@ -13,11 +13,13 @@ namespace ast {
 	std::unique_ptr<expression> _lhs, _rhs;
 
     public:
-	binary_expression(std::string&& op, std::unique_ptr<expression>&& lhs, std::unique_ptr<expression>&& rhs)
-	    : _operator{std::move(op)}
-	    , _lhs{std::move(lhs)}
-	    , _rhs{std::move(rhs)}
-	    {}
+	binary_expression(std::string&&, std::unique_ptr<expression>&&, std::unique_ptr<expression>&&);
+
+	virtual auto accept(visitor*) const -> llvm::Value* override;
+
+	auto op() const -> const std::string&;
+	auto lhs() const -> const expression*;
+	auto rhs() const -> const expression*;
     };
 
 }

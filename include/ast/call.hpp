@@ -14,10 +14,12 @@ namespace ast {
 	std::vector<std::unique_ptr<expression>> _args;
 
     public:
-	call_expression(std::string&& callee, std::vector<std::unique_ptr<expression>>&& args)
-	    : _callee{std::move(callee)}
-	    , _args{std::move(args)}
-	    {}
+	call_expression(std::string&&, std::vector<std::unique_ptr<expression>>&&);
+
+	virtual auto accept(visitor*) const -> llvm::Value* override;
+
+	auto callee() const -> const std::string&;
+	auto args() const -> const std::vector<std::unique_ptr<expression>>&;
     };
 
 }

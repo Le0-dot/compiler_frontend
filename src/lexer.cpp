@@ -3,11 +3,6 @@
 #include <algorithm>
 #include <cstdint>
 
-auto lexer::instance() -> lexer& {
-    static lexer _instance{};
-    return _instance;
-}
-
 auto lexer::for_file(std::string_view filename) -> lexer& {
     _file = {std::fopen(filename.data(), "r"), std::fclose};
     if(!_file)

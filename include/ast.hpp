@@ -6,3 +6,5 @@
 #include "ast/function.hpp"
 #include "ast/call.hpp"
 #include "ast/binary.hpp"
+
+#include "ast/visitor.hpp"

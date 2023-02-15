@@ -43,7 +43,12 @@ class lexer {
     std::string _identifier{};
 
 public:
-    static auto instance() -> lexer&;
+    lexer()                           = default;
+    lexer(const lexer&)               = delete;
+    lexer(lexer&&)                    = default;
+    auto operator=(const lexer&)      = delete;
+    auto operator=(lexer&&) -> lexer& = default;
+    ~lexer()                          = default;
 
     auto for_file(std::string_view filename) -> lexer&;
     [[nodiscard]] auto register_token(std::string_view token, uint8_t token_id) noexcept -> bool;
@@ -52,13 +57,6 @@ public:
     auto consume() noexcept -> void;
 
 private:
-    lexer() = default;
-    ~lexer() = default;
-    lexer(const lexer&) = delete;
-    lexer(lexer&&) = delete;
-    auto operator=(const lexer&) = delete;
-    auto operator=(lexer&&) = delete;
-
     [[nodiscard]] auto read_token() noexcept -> uint8_t;
     [[nodiscard]] auto peek() noexcept -> char;
     [[nodiscard]] constexpr auto isspecial(char ch) noexcept -> bool;

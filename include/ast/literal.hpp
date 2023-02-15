@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include "expression.hpp"
@@ -20,10 +21,12 @@ namespace ast {
 	literal_types _type;
 
     public:
-	literal_expression(std::string&& literal, literal_types type) 
-	    : _value{std::move(literal)} 
-	    , _type{type} 
-	    {}
+	literal_expression(std::string&&, literal_types);
+
+	virtual auto accept(visitor*) const -> llvm::Value* override;
+
+	auto value() const -> const std::string&;
+	auto type() const -> literal_types;
     };
 
 }

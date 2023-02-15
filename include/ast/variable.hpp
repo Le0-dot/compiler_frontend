@@ -11,7 +11,11 @@ namespace ast {
 	std::string _name;
 
     public:
-	variable_expression(std::string&& name) : _name{std::move(name)} {}
+	variable_expression(std::string&&);
+
+	virtual auto accept(visitor*) const -> llvm::Value* override;
+
+	auto name() const -> const std::string&;
     };
 
 }

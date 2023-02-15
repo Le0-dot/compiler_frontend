@@ -8,18 +8,20 @@
 
 namespace ast {
 
-    class function_definition_expression : public expression {
+    class function_expression : public expression {
     private:
 	std::string _name;
 	std::vector<std::string> _args;
 	std::unique_ptr<expression> _body;
 
     public:
-	function_definition_expression(std::string&& name, std::vector<std::string>&& args, std::unique_ptr<expression>&& body)
-	    : _name{std::move(name)}
-	    , _args{std::move(args)}
-	    , _body{std::move(body)}
-	    {}
+	function_expression(std::string&&, std::vector<std::string>&&, std::unique_ptr<expression>&&);
+
+	virtual auto accept(visitor* v) const -> llvm::Value* override;
+
+	auto name() const -> const std::string&;
+	auto args() const -> const std::vector<std::string>&;
+	auto body() const -> const expression*;
     };
 
 }
