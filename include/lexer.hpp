@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <array>
 #include <string>
@@ -35,8 +36,6 @@ namespace tokens {
 }
 
 class lexer {
-    static constexpr std::array SPECIAL_SYMBOL_TOKENS{'!', '@', '#', '$', '%', '^', '&', '*', '-', '+', '/', '~', '?', '=', '<', '>', ';', ':'};
-
     std::map<std::string, uint8_t> _tokens{};
     std::unique_ptr<std::FILE, decltype(&std::fclose)> _file{stdin, std::fclose};
     uint8_t _current_token{};
@@ -58,6 +57,22 @@ public:
 
 private:
     [[nodiscard]] auto read_token() noexcept -> uint8_t;
+    [[nodiscard]] auto read_char() noexcept -> char;
     [[nodiscard]] auto peek() noexcept -> char;
-    [[nodiscard]] constexpr auto isspecial(char ch) noexcept -> bool;
 };
+
+[[nodiscard]] constexpr auto isspecial(char) noexcept -> bool;
+[[nodiscard]] constexpr auto iseol(char) noexcept -> bool;
+[[nodiscard]] constexpr auto iscomment(char, char) noexcept -> bool;
+[[nodiscard]] constexpr auto issinglelinecomment(char, char) noexcept -> bool;
+[[nodiscard]] constexpr auto ismultilinecomment(char, char) noexcept -> bool;
+
+[[nodiscard]] constexpr auto isbinarydigit(char) noexcept -> bool;
+[[nodiscard]] constexpr auto isoctaldigit(char) noexcept -> bool;
+[[nodiscard]] constexpr auto isdecimaldigit(char) noexcept -> bool;
+[[nodiscard]] constexpr auto ishexadecimaldigit(char) noexcept -> bool;
+[[nodiscard]] constexpr auto isfloatingdigit(char) noexcept -> bool;
+
+[[nodiscard]] constexpr auto isbinaryprefix(char, char) noexcept -> bool;
+[[nodiscard]] constexpr auto isoctalprefix(char, char) noexcept -> bool;
+[[nodiscard]] constexpr auto ishexadecimalprefix(char, char) noexcept -> bool;

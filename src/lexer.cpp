@@ -36,12 +36,13 @@ auto lexer::consume() noexcept -> void {
     static char last = ' ';
     _identifier = {};
 
-
     // skip spaces and emit End Of Line tokens
-    if((last == '\n' || last == '\r') && _current_token != tokens::eol)
+    if(iseol(last)) {
+	last = read_char();
 	return tokens::eol;
+    }
     while(isspace(last)) {
-	last = std::fgetc(_file.get());
+	last = read_char();
 	if(last == '\n' || last == '\r')
 	    return tokens::eol;
     }
@@ -57,36 +58,26 @@ auto lexer::consume() noexcept -> void {
 	{',', tokens::comma},
 	{'.', tokens::dot},
     };
-    if(auto _last = last; last != '.' && special_non_overridable.contains(last) || last == '.' && !isdigit(peek()) ) {
+    if(last != '.' && special_non_overridable.contains(last) ||
+       last == '.' && !isdigit(peek())) {
 	_identifier = last;
-	last = std::fgetc(_file.get());
-	return special_non_overridable.at(_last);
+	uint8_t token = special_non_overridable.at(last);
+	last = read_char();
+	return token;
     }
 
-    // other special symbols and their versions with '=', e.g. '<='
-    char next = peek();
-    bool is_singleline_comment = (last == '/' && next == '/');
-    bool is_multiline_comment = (last == '/' && next == '*');
-    bool is_comment = is_singleline_comment || is_multiline_comment;
-    if(!is_comment && isspecial(last)) {
+    // special symbols that serve as operators
+    if(!iscomment(last, peek()) && isspecial(last)) {
 	_identifier.push_back(last);
-	last = std::fgetc(_file.get());
-	if(isspecial(last)) {
+	while(isspecial(last = read_char()))
 	    _identifier.push_back(last);
-	    last = std::fgetc(_file.get());
-	}
-	if(last == '=') {
-	    _identifier.push_back(last);
-	    last = std::fgetc(_file.get());
-	}
-	auto token_id = _tokens[_identifier];
-	return token_id ? token_id : tokens::identifier;
+	return tokens::identifier;
     }
 
     // identifier [a-zA-Z_][a-zA-Z0-9_]*
     if(isalpha(last) || last == '_') {
 	_identifier.push_back(last);
-	while(std::isalnum(last = std::fgetc(_file.get())) || last == '_')
+	while(std::isalnum(last = read_char()) || last == '_')
 	    _identifier.push_back(last);
 
 	auto token_id = _tokens[_identifier];
@@ -95,79 +86,93 @@ auto lexer::consume() noexcept -> void {
 
     // character literals
     if(last == '\'') {
-	last = std::fgetc(_file.get());
-	_identifier.push_back(last);
-	last = std::fgetc(_file.get());
+	_identifier.push_back(read_char());
+	last = read_char();
 	if(last != '\'')
 	    return tokens::error;
+	last = read_char();
 	return tokens::character;
     }
 
     // string literals
     if(last == '\"') {
-	last = std::fgetc(_file.get());
-	while(last != '\"' && last != EOF) {
+	while((last = read_char()) != '\"' && last != EOF)
 	    _identifier.push_back(last);
-	    last = std::fgetc(_file.get());
-	}
 	if(last == EOF)
 	    return tokens::error;
+	last = read_char();
 	return tokens::string;
     }
 
     // number (0x|0b|.|[0-9])[0-9._]*
-    if(std::isdigit(last) || last == '.') {
-	_identifier.push_back(last);
-	uint8_t number_type = (last == '.') ? tokens::floating : tokens::decimal;
+    if(isfloatingdigit(last)) {
+	uint8_t number_type;
+	bool (*validator)(char);
 
-	// handle integer numbers
-	if(last == '0') {
-	    last = std::fgetc(_file.get());
-	    if(last == 'x')
-		number_type = tokens::hexadecimal;
-	    else if(last == 'b')
-		number_type = tokens::binary;
-	    else if(last >= '0' && last <= '7')
-		number_type = tokens::octal;
-	    else
-		return tokens::decimal;
+	// handle types of numbers
+	if(ishexadecimalprefix(last, peek())) {   // found "0x" - hexadecimal number
 	    _identifier.push_back(last);
+	    last = read_char();
+	    number_type = tokens::hexadecimal;
+	    validator = ishexadecimaldigit;
+	} else if(isoctalprefix(last, peek())) {  // found '0' and number in range 0-7 - octal number
+	    _identifier.push_back(last);
+	    last = read_char();
+	    number_type = tokens::octal;
+	    validator = isoctaldigit;
+	} else if(isbinaryprefix(last, peek())) { // found "0b" - binary number
+	    _identifier.push_back(last);
+	    last = read_char();
+	    number_type = tokens::binary;
+	    validator = isbinarydigit;
+	} else if(last == '0') {                  // found '0' and some other number or character that is not prefix of a number type - decimal '0'
+	    _identifier.push_back(last);
+	    last = read_char();
+	    return tokens::decimal;
+	} else if(last == '.') {                  // found '.' - floating point number
+	    number_type = tokens::floating;
+	    validator = isfloatingdigit;
+	} else {                                  // found number in range 0-9 - decimal
+	    number_type = tokens::decimal;
+	    validator = isdecimaldigit;
 	}
 
-	// consume types
-	while(std::isdigit(last = std::fgetc(_file.get())) || 
-		(last >= 'a' && last <= 'f' || last >= 'A' && last <= 'F') && number_type == tokens::hexadecimal ||
-		last == '.' || last == '_') {
-	    if(last == '_')
+	// read characters until validator is false
+	do {
+	    _identifier.push_back(last);
+	    last = read_char();
+	    if(last == '_') // skip '_'
 		continue;
-	    if(number_type == tokens::octal && last >= '8')
-		return tokens::error;
-	    if(number_type == tokens::binary && last >= '2')
-		return tokens::error;
-	    _identifier.push_back(last);
-	    if(last == '.' && number_type == tokens::decimal)
+	    if(last == '.' && number_type == tokens::decimal) { // found first '.' in decimal - fall back to floating point
 		number_type = tokens::floating;
-	    else if(last == '.')
+		validator = isfloatingdigit;
+	    } else if(last == '.')                              // found '.' in hexadecimal, octal or floating point - return with error
 		return tokens::error;
-	}
+	} while(validator(last));
+
+	if(isfloatingdigit(last) || ishexadecimaldigit(last)) // found digit right after another digit without separation 
+	    return tokens::error;
 
 	return number_type;
     }
 
-    // comment // and /* ... */
-    if(last == '/') {
-	last = std::fgetc(_file.get());
-	if(last == '/')
-	    while(last != '\n' && last != '\r' && last != EOF)
-		last = std::fgetc(_file.get());
-	if(last == '*') {
-	    char prev = 0;
-	    while(!(prev == '*' && last == '/') && last != EOF) {
-		prev = last;
-		last = std::fgetc(_file.get());
-	    }
-	    last = std::fgetc(_file.get());
+    // skip comment // and /* ... */
+    if(iscomment(last, peek())) {
+	char next = read_char();
+	if(issinglelinecomment(last, next)) {
+	    do
+		last = read_char();
+	    while(last != '\n' && last != '\r' && last != EOF);
 	}
+	if(ismultilinecomment(last, next)) {
+	    char prev;
+	    do {
+		prev = last;
+		last = read_char();
+	    } while(!(prev == '*' && last == '/') && last != EOF);
+	}
+
+	last = read_char();
 	if(last == EOF)
 	    return tokens::eof;
 	return read_token();
@@ -179,12 +184,68 @@ auto lexer::consume() noexcept -> void {
     return tokens::error;
 }
 
+[[nodiscard]] auto lexer::read_char() noexcept -> char {
+    return std::fgetc(_file.get());
+}
+
 [[nodiscard]] auto lexer::peek() noexcept -> char {
     char last = std::fgetc(_file.get());
     std::ungetc(last, _file.get());
     return last;
 }
 
-constexpr auto lexer::isspecial(char ch) noexcept -> bool {
-    return std::ranges::find(SPECIAL_SYMBOL_TOKENS, ch) != SPECIAL_SYMBOL_TOKENS.end();
+[[nodiscard]] constexpr auto isspecial(char ch) noexcept -> bool {
+    constexpr std::array SPECIAL_SYMBOL_TOKENS{'!', '#', '$', '%', '&', '*', '+', '-', '/', ':', ';', '<', '=', '>', '?', '@', '^', '~'};
+    return std::ranges::binary_search(SPECIAL_SYMBOL_TOKENS, ch);
+}
+
+[[nodiscard]] constexpr auto iseol(char ch) noexcept -> bool {
+    return ch == '\n' || ch == '\r';
+}
+
+[[nodiscard]] constexpr auto iscomment(char first, char second) noexcept -> bool {
+    return first == '/' && (second == '/' || second == '*');
+}
+
+[[nodiscard]] constexpr auto issinglelinecomment(char first, char second) noexcept -> bool {
+    return first == '/' && second == '/';
+}
+
+[[nodiscard]] constexpr auto ismultilinecomment(char first, char second) noexcept -> bool {
+    return first == '/' && second == '*';
+}
+
+[[nodiscard]] constexpr auto isbinarydigit(char ch) noexcept -> bool {
+    return ch == '0' || ch == '1' || ch == '_';
+}
+
+[[nodiscard]] constexpr auto isoctaldigit(char ch) noexcept -> bool {
+    return ch >= '0' && ch <= '7' || ch == '_';
+}
+
+[[nodiscard]] constexpr auto isdecimaldigit(char ch) noexcept -> bool {
+    return ch >= '0' && ch <= '9' || ch == '_';
+}
+
+[[nodiscard]] constexpr auto ishexadecimaldigit(char ch) noexcept -> bool {
+    return ch >= '0' && ch <= '9' || 
+	   ch >= 'a' && ch <= 'f' ||
+	   ch >= 'A' && ch <= 'F' ||
+	   ch == '_';
+}
+
+[[nodiscard]] constexpr auto isfloatingdigit(char ch) noexcept -> bool {
+    return isdecimaldigit(ch) || ch == '.';
+};
+
+[[nodiscard]] constexpr auto isbinaryprefix(char first, char second) noexcept -> bool {
+    return first == '0' && second == 'b';
+}
+
+[[nodiscard]] constexpr auto isoctalprefix(char first, char second) noexcept -> bool {
+    return first == '0' && isoctaldigit(second);
+}
+
+[[nodiscard]] constexpr auto ishexadecimalprefix(char first, char second) noexcept -> bool {
+    return first == '0' && second == 'x';
 }
