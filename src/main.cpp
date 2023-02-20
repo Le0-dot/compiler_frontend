@@ -1,9 +1,7 @@
 #include <cstdio>
-#include <llvm/Support/raw_ostream.h>
 
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "operator_table.hpp"
 #include "code_generator.hpp"
 
 int main(int argc, char** argv) {
@@ -15,11 +13,11 @@ int main(int argc, char** argv) {
     }
 
     auto t = operator_table{};
-    t.add("=", 1);
-    t.add("+", 3);
-    t.add("-", 3);
-    t.add("*", 4);
-    t.add("/", 4);
+    t["="] = 0;
+    t["+"] = 2;
+    t["-"] = 2;
+    t["*"] = 3;
+    t["/"] = 3;
 
     auto p = parser(std::move(l), std::move(t));
     auto cg = code_generator(module_name);

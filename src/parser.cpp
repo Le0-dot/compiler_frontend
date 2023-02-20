@@ -3,7 +3,6 @@
 
 #include "ast.hpp"
 #include "lexer.hpp"
-#include "operator_table.hpp"
 #include "parser.hpp"
 
 parser::parser(lexer&& _lexer, operator_table&& _table) 
@@ -124,7 +123,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 // binary ::= (op prmary)*
 [[nodiscard]] auto parser::parse_binary_rhs(uint8_t precedence, std::unique_ptr<ast::expression>&& lhs) -> std::unique_ptr<ast::expression> {
     while(_lexer.token() == tokens::identifier) {
-	uint16_t current_precedence = _table.get(_lexer.identifier());
+	uint16_t current_precedence = _table[_lexer.identifier()];
 
 	if(current_precedence < precedence)
 	    return lhs;
@@ -136,7 +135,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	if(!rhs)
 	    return nullptr;
 
-	uint16_t next_precedence = _table.get(_lexer.identifier());
+	uint16_t next_precedence = _table[_lexer.identifier()];
 	if(current_precedence < next_precedence) {
 	    rhs = parse_binary_rhs(current_precedence + 1, std::move(rhs));
 	    if(!rhs)

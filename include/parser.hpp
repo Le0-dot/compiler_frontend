@@ -4,7 +4,7 @@
 
 #include "ast.hpp"
 #include "lexer.hpp"
-#include "operator_table.hpp"
+#include "generic_table.hpp"
 
 class parser {
 private:

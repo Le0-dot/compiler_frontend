@@ -9,7 +9,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include "ast.hpp"
-#include "type_table.hpp"
+#include "generic_table.hpp"
 
 class code_generator : public ast::visitor {
 private:
