@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <algorithm>
 
 #include <llvm/ADT/APFloat.h>
 #include <llvm/IR/BasicBlock.h>
@@ -7,6 +8,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Verifier.h>
+#include <ranges>
 
 #include "ast/literal.hpp"
 #include "code_generator.hpp"
@@ -15,7 +17,9 @@ code_generator::code_generator(const std::string& module_name)
     : _context{std::make_unique<llvm::LLVMContext>()}
     , _module{std::make_unique<llvm::Module>(module_name, *_context)}
     , _builder{std::make_unique<llvm::IRBuilder<>>(*_context)}
-{}
+{
+    add_default_types();
+}
 
 auto code_generator::visit(const ast::expression* expr) -> llvm::Value* {
     return expr->accept(this);
@@ -89,20 +93,32 @@ auto code_generator::visit(const ast::call_expression* expr) -> llvm::Value* {
 }
 
 auto code_generator::visit(const ast::function_expression* expr) -> llvm::Value* {
-    std::vector<llvm::Type*> args_type{expr->args().size(), llvm::Type::getDoubleTy(*_context)};
+    // set up argument list types
+    std::vector<llvm::Type*> args_type;
+    args_type.reserve(expr->args().size());
+    for(const auto& [_, type_str]: expr->args()) {
+	llvm::Type* type = _type_table[type_str];
+	if(!type) {
+	    fprintf(stderr, "error: unknown type \"%s\"", type_str.data());
+	    return nullptr;
+	}
+	args_type.push_back(type);
+    }
+
+    // set up return type and function type
     llvm::Type* return_type = llvm::Type::getDoubleTy(*_context);
     llvm::FunctionType* function_type = llvm::FunctionType::get(return_type, args_type, false);
 
+    // create function
     llvm::Function* function = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, expr->name(), _module.get());
 
-    // set arguments names and add fuction arguments to named values
+    // set arguments names, types and add fuction arguments to named values
     _named_values.clear();
-    auto arg_it = function->args().begin();
-    auto name_it = expr->args().begin();
-    for(; arg_it != function->args().end(); ++arg_it, ++name_it) {
-	arg_it->setName(*name_it);
-	_named_values[*name_it] = &*arg_it;
-    }
+    std::ranges::for_each(expr->args(), [this, arg = function->args().begin()] (const auto arg_pair) mutable {
+	arg->setName(arg_pair.first);
+	_named_values[arg_pair.first] = &*arg++;
+	fprintf(stderr, "found argument with name = \"%s\"; type = \"%s\";\n", arg_pair.first.data(), arg_pair.second.data());
+    });
 
     // create basic block to write to
     llvm::BasicBlock* block = llvm::BasicBlock::Create(*_context, "entry", function);
@@ -118,4 +134,24 @@ auto code_generator::visit(const ast::function_expression* expr) -> llvm::Value*
 
     function->eraseFromParent();
     return nullptr;
+}
+
+auto code_generator::add_default_types() -> void {
+    _type_table["int"] = llvm::Type::getInt32Ty(*_context);
+    _type_table["int8"] = llvm::Type::getInt8Ty(*_context);
+    _type_table["int16"] = llvm::Type::getInt16Ty(*_context);
+    _type_table["int32"] = llvm::Type::getInt32Ty(*_context);
+    _type_table["int64"] = llvm::Type::getInt64Ty(*_context);
+    _type_table["int128"] = llvm::Type::getInt128Ty(*_context);
+
+    _type_table["uint"] = llvm::Type::getInt32Ty(*_context);
+    _type_table["uint8"] = llvm::Type::getInt8Ty(*_context);
+    _type_table["uint16"] = llvm::Type::getInt16Ty(*_context);
+    _type_table["uint32"] = llvm::Type::getInt32Ty(*_context);
+    _type_table["uint64"] = llvm::Type::getInt64Ty(*_context);
+    _type_table["uint128"] = llvm::Type::getInt128Ty(*_context);
+
+    _type_table["float"] = llvm::Type::getFloatTy(*_context);
+    _type_table["bfloat"] = llvm::Type::getBFloatTy(*_context);
+    _type_table["double"] = llvm::Type::getDoubleTy(*_context);
 }

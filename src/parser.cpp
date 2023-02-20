@@ -149,38 +149,53 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 }
 
 [[nodiscard]] auto parser::parse_function() -> std::unique_ptr<ast::expression> {
+    // check if function definition starts with 'function' key word
     if(_lexer.identifier() != "function") {
 	fprintf(stderr, "expected 'function' in function definition");
 	return nullptr;
     }
     _lexer.consume();
 
+    // parse name if there is one
     std::string name{};
     if(_lexer.token() == tokens::identifier) {
 	name = std::move(_lexer.identifier());
 	_lexer.consume();
     }
 
+    // check for '(' before argument list
     if(_lexer.token() != tokens::left_parenthesis) {
 	fprintf(stderr, "error: expected '(' in function definition");
 	return nullptr;
     }
-
     _lexer.consume();
-    std::vector<std::string> args;
+
+    // parse argument list in form of: arg_name arg_type
+    std::vector<std::pair<std::string, std::string>> args;
     while(_lexer.token() == tokens::identifier) {
-	args.emplace_back(std::move(_lexer.identifier()));
+	auto arg_name = std::move(_lexer.identifier());
 	_lexer.consume();
+
+	if(_lexer.token() != tokens::identifier) {
+	    fprintf(stderr, "error: expected argument type after argument name, found: \"%s\"", _lexer.identifier().data());
+	    return nullptr;
+	}
+
+	args.emplace_back(std::move(arg_name), std::move(_lexer.identifier()));
+	_lexer.consume();
+
 	if(_lexer.token() == tokens::comma)
 	    _lexer.consume();
     }
 
+    // check for ')' after argument list
     if(_lexer.token() != tokens::right_parenthesis) {
 	fprintf(stderr, "error: expected ')'");
 	return nullptr;
     }
     _lexer.consume();
 
+    // parse body of a function
     auto body = parse_expression();
     if(!body)
 	return nullptr;

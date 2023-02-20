@@ -77,7 +77,7 @@ auto ast::call_expression::args() const -> const std::vector<std::unique_ptr<exp
 }
 
 
-ast::function_expression::function_expression(std::string&& name, std::vector<std::string>&& args, std::unique_ptr<expression>&& body)
+ast::function_expression::function_expression(std::string&& name, std::vector<std::pair<std::string, std::string>>&& args, std::unique_ptr<expression>&& body)
     : _name{std::move(name)}
     , _args{std::move(args)}
     , _body{std::move(body)}
@@ -91,7 +91,7 @@ auto ast::function_expression::name() const -> const std::string& {
     return _name;
 }
 
-auto ast::function_expression::args() const -> const std::vector<std::string>& {
+auto ast::function_expression::args() const -> const std::vector<std::pair<std::string, std::string>>& {
     return _args;
 }
 

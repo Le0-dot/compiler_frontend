@@ -9,6 +9,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include "ast.hpp"
+#include "type_table.hpp"
 
 class code_generator : public ast::visitor {
 private:
@@ -16,6 +17,7 @@ private:
     std::unique_ptr<llvm::Module> _module;
     std::unique_ptr<llvm::IRBuilder<>> _builder;
     std::unordered_map<std::string, llvm::Value*> _named_values{};
+    type_table _type_table{};
 
 public:
     code_generator(const std::string&);
@@ -33,4 +35,7 @@ public:
     virtual auto visit(const ast::binary_expression*)   -> llvm::Value* override;
     virtual auto visit(const ast::call_expression*)     -> llvm::Value* override;
     virtual auto visit(const ast::function_expression*) -> llvm::Value* override;
+
+private:
+    auto add_default_types() -> void;
 };
