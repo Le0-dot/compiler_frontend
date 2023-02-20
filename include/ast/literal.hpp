@@ -8,7 +8,10 @@
 namespace ast {
 
     enum class literal_types : uint8_t {
-	integer,
+	binary,
+	octal,
+	decimal,
+	hexadecimal,
 	floating,
 	character,
 	string

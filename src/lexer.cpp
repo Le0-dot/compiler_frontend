@@ -111,17 +111,16 @@ auto lexer::consume() noexcept -> void {
 
 	// handle types of numbers
 	if(ishexadecimalprefix(last, peek())) {   // found "0x" - hexadecimal number
-	    _identifier.push_back(last);
+	    last = read_char(); // eat 'x'
 	    last = read_char();
 	    number_type = tokens::hexadecimal;
 	    validator = ishexadecimaldigit;
 	} else if(isoctalprefix(last, peek())) {  // found '0' and number in range 0-7 - octal number
-	    _identifier.push_back(last);
 	    last = read_char();
 	    number_type = tokens::octal;
 	    validator = isoctaldigit;
 	} else if(isbinaryprefix(last, peek())) { // found "0b" - binary number
-	    _identifier.push_back(last);
+	    last = read_char(); // eat 'b'
 	    last = read_char();
 	    number_type = tokens::binary;
 	    validator = isbinarydigit;

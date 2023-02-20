@@ -2,6 +2,7 @@
 #include <memory>
 
 #include "ast.hpp"
+#include "ast/literal.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 
@@ -14,11 +15,17 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 [[nodiscard]] auto parser::parse_literal() -> std::unique_ptr<ast::expression> {
     ast::literal_types type;
     switch(_lexer.token()) {
-	case tokens::decimal: [[fallthrough]];
-	case tokens::hexadecimal: [[fallthrough]];
-	case tokens::octal: [[fallthrough]];
 	case tokens::binary:
-	    type = ast::literal_types::integer;
+	    type = ast::literal_types::binary;
+	    break;
+	case tokens::octal: 
+	    type = ast::literal_types::octal;
+	    break;
+	case tokens::decimal: 
+	    type = ast::literal_types::decimal;
+	    break;
+	case tokens::hexadecimal:
+	    type = ast::literal_types::hexadecimal;
 	    break;
 	case tokens::floating:
 	    type = ast::literal_types::floating;

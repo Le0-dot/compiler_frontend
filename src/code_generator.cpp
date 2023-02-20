@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include <llvm/ADT/APFloat.h>
+#include <llvm/ADT/APInt.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -27,12 +28,18 @@ auto code_generator::visit(const ast::expression* expr) -> llvm::Value* {
 
 auto code_generator::visit(const ast::literal_expression* expr) -> llvm::Value* {
     switch (expr->type()) {
-	case ast::literal_types::integer:
-	    return llvm::ConstantInt::get(*_context, llvm::APSInt(expr->value()));
+	case ast::literal_types::binary:
+	    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*_context), expr->value(), 2);
+	case ast::literal_types::octal:
+	    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*_context), expr->value(), 8);
+	case ast::literal_types::decimal:
+	    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*_context), expr->value(), 10);
+	case ast::literal_types::hexadecimal:
+	    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*_context), expr->value(), 16);
 	case ast::literal_types::floating:
 	    return llvm::ConstantFP::get(*_context, llvm::APFloat(std::stod(expr->value())));
 	case ast::literal_types::character:
-	    return nullptr;
+	    return llvm::ConstantInt::get(llvm::Type::getInt8Ty(*_context), static_cast<uint8_t>(expr->value()[0]));
 	case ast::literal_types::string:
 	    return nullptr;
 	default:
