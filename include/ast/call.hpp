@@ -18,8 +18,8 @@ namespace ast {
 
 	virtual auto accept(visitor*) const -> llvm::Value* override;
 
-	auto callee() const -> const std::string&;
-	auto args() const -> const std::vector<std::unique_ptr<expression>>&;
+	[[nodiscard]] auto callee() const -> const std::string&;
+	[[nodiscard]] auto args() const -> const std::vector<std::unique_ptr<expression>>&;
     };
 
 }

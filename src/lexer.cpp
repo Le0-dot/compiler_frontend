@@ -4,20 +4,16 @@
 #include <cstdint>
 #include <cstdio>
 
-auto lexer::for_file(std::string_view filename) -> lexer& {
-    _file = {std::fopen(filename.data(), "r"), std::fclose};
+std::map<std::string, uint8_t> lexer::_tokens = {
+    {"return", tokens::return_token},
+};
+
+lexer::lexer(std::string_view filename) 
+    : _file{std::fopen(filename.data(), "r"), std::fclose}
+{
     if(!_file)
 	throw std::runtime_error("Unable to read from file");
     consume();
-    return *this;
-}
-
-[[nodiscard]] auto lexer::register_token(std::string_view token, uint8_t token_id) noexcept -> bool {
-    std::string token_str{token};
-    if(token_id <= tokens::last_defined || _tokens[token_str])
-	return false;
-    _tokens[token_str] = token_id;
-    return true;
 }
 
 [[nodiscard]] auto lexer::token() noexcept -> uint8_t {

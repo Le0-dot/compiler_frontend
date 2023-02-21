@@ -17,9 +17,9 @@ namespace ast {
 
 	virtual auto accept(visitor*) const -> llvm::Value* override;
 
-	auto op() const -> const std::string&;
-	auto lhs() const -> const expression*;
-	auto rhs() const -> const expression*;
+	[[nodiscard]] auto op() const -> const std::string&;
+	[[nodiscard]] auto lhs() const -> const expression*;
+	[[nodiscard]] auto rhs() const -> const expression*;
     };
 
 }

@@ -5,10 +5,10 @@
 #include "code_generator.hpp"
 
 int main(int argc, char** argv) {
-    auto l = lexer{};
+    lexer l;
     std::string module_name = "test_module";
     if(argc == 2) {
-	l.for_file(argv[1]);
+	l = lexer{argv[1]};
 	module_name = argv[1];
     }
 

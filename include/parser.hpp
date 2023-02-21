@@ -28,4 +28,5 @@ public:
     [[nodiscard]] auto parse_expression()                                            -> std::unique_ptr<ast::expression>;
     [[nodiscard]] auto parse_binary_rhs(uint8_t, std::unique_ptr<ast::expression>&&) -> std::unique_ptr<ast::expression>;
     [[nodiscard]] auto parse_function()                                              -> std::unique_ptr<ast::expression>;
+    [[nodiscard]] auto parse_block()                                                 -> std::unique_ptr<ast::expression>;
 };

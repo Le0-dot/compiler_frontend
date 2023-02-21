@@ -15,7 +15,7 @@ namespace ast {
 
 	virtual auto accept(visitor*) const -> llvm::Value* override;
 
-	auto name() const -> const std::string&;
+	[[nodiscard]] auto name() const -> const std::string&;
     };
 
 }

@@ -2,7 +2,6 @@
 #include <memory>
 
 #include "ast.hpp"
-#include "ast/literal.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 
@@ -47,6 +46,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 
 // parenthesis ::= '(' expression ')'
 [[nodiscard]] auto parser::parse_parenthesis() -> std::unique_ptr<ast::expression> {
+    fprintf(stderr, "parsing parenthesis with token = \"%s\"\n", _lexer.identifier().data());
     _lexer.consume();
 
     auto expr = parse_expression();
@@ -54,11 +54,12 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	return nullptr;
 
     if(_lexer.token() != tokens::right_parenthesis) {
-	fprintf(stderr, "error: expected ')'");
+	fprintf(stderr, "error: expected ')', found \"%s\"", _lexer.identifier().data());
 	return nullptr;
     }
 
     _lexer.consume();
+    fprintf(stderr, "finished parsing parenthesis with token = \"%s\"\n", _lexer.identifier().data());
     return expr;
 }
 
@@ -99,6 +100,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 //		::= literal
 //		::= parenthesis
 [[nodiscard]] auto parser::parse_primary() -> std::unique_ptr<ast::expression> {
+    fprintf(stderr, "parsing primary exprssion\n");
     switch (_lexer.token()) {
 	case tokens::identifier:
 	    return parse_indentifier();
@@ -120,6 +122,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 
 // expression ::= primary binary
 [[nodiscard]] auto parser::parse_expression() -> std::unique_ptr<ast::expression> {
+    fprintf(stderr, "parsing expression with token = \"%s\"\n", _lexer.identifier().data());
     auto lhs = parse_primary();
     if(!lhs)
 	return nullptr;
@@ -129,6 +132,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 
 // binary ::= (op prmary)*
 [[nodiscard]] auto parser::parse_binary_rhs(uint8_t precedence, std::unique_ptr<ast::expression>&& lhs) -> std::unique_ptr<ast::expression> {
+    fprintf(stderr, "parsing binary rhs with token = \"%s\"\n", _lexer.identifier().data());
     while(_lexer.token() == tokens::identifier) {
 	uint16_t current_precedence = _table[_lexer.identifier()];
 
@@ -151,6 +155,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 
 	lhs = std::make_unique<ast::binary_expression>(std::move(op), std::move(lhs), std::move(rhs));
     }
+    fprintf(stderr, "finished parsing binary rhs with token = \"%s\"\n", _lexer.identifier().data());
     return lhs;
 }
 
@@ -201,10 +206,57 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
     }
     _lexer.consume();
 
+    std::string return_type{};
+    if(_lexer.token() == tokens::identifier) {
+	return_type = std::move(_lexer.identifier());
+	_lexer.consume();
+    }
+
+
     // parse body of a function
-    auto body = parse_expression();
+    auto body = parse_block();
     if(!body)
 	return nullptr;
+    fprintf(stderr, "finished parsing block\n");
 
-    return std::make_unique<ast::function_expression>(std::move(name), std::move(args), std::move(body));
+    return std::make_unique<ast::function_expression>(std::move(name), std::move(return_type), std::move(args), std::move(body));
+}
+
+[[nodiscard]] auto parser::parse_block() -> std::unique_ptr<ast::expression> {
+    if(_lexer.token() != tokens::eol && _lexer.token() != tokens::left_curly_brace) {
+	fprintf(stderr, "error: expected new line or '{' in the beginning of the block");
+	return nullptr;
+    }
+
+    std::vector<std::unique_ptr<ast::expression>> expressions;
+    if(_lexer.token() == tokens::eol) { // found eol
+	_lexer.consume();
+	fprintf(stderr, "found eol, creating return expression\n");
+	auto expr = parse_expression();
+	if(!expr)
+	    return nullptr;
+	expressions.emplace_back(std::move(expr));
+    } else {                            // found '{'
+	_lexer.consume();
+	if(_lexer.token() != tokens::eol) {
+	    fprintf(stderr, "error: expected new line after '{'");
+	    return nullptr;
+	}
+	_lexer.consume();
+	bool is_return = false;
+	while(_lexer.token() != tokens::right_curly_brace && !is_return) {
+	    fprintf(stderr, "found token = \"%s\"\n", _lexer.identifier().data());
+	    if(_lexer.token() == tokens::return_token) {
+		is_return = true;
+		_lexer.consume();
+	    }
+	    auto expr = parse_expression();
+	    if(!expr)
+		return nullptr;
+	    expressions.emplace_back(std::move(expr));
+	    _lexer.consume();
+	}
+    }
+
+    return std::make_unique<ast::block_expression>(std::move(expressions));
 }

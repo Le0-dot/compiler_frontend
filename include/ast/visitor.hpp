@@ -2,11 +2,12 @@
 
 #include <llvm/IR/Value.h>
 
-#include "ast/binary.hpp"
-#include "ast/call.hpp"
-#include "ast/function.hpp"
-#include "ast/literal.hpp"
-#include "ast/variable.hpp"
+#include "binary.hpp"
+#include "call.hpp"
+#include "function.hpp"
+#include "literal.hpp"
+#include "variable.hpp"
+#include "block.hpp"
 
 namespace ast {
 
@@ -19,6 +20,7 @@ namespace ast {
 	virtual auto visit(const binary_expression*)   -> llvm::Value* = 0;
 	virtual auto visit(const call_expression*)     -> llvm::Value* = 0;
 	virtual auto visit(const function_expression*) -> llvm::Value* = 0;
+	virtual auto visit(const block_expression*)    -> llvm::Value* = 0;
     };
 
 }

@@ -28,8 +28,8 @@ namespace ast {
 
 	virtual auto accept(visitor*) const -> llvm::Value* override;
 
-	auto value() const -> const std::string&;
-	auto type() const -> literal_types;
+	[[nodiscard]] auto value() const -> const std::string&;
+	[[nodiscard]] auto type() const -> literal_types;
     };
 
 }

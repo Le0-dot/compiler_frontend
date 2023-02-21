@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <algorithm>
+#include <ranges>
 
 #include <llvm/ADT/APFloat.h>
 #include <llvm/ADT/APInt.h>
@@ -9,9 +10,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Verifier.h>
-#include <ranges>
 
-#include "ast/literal.hpp"
 #include "code_generator.hpp"
 
 code_generator::code_generator(const std::string& module_name)
@@ -113,7 +112,7 @@ auto code_generator::visit(const ast::function_expression* expr) -> llvm::Value*
     }
 
     // set up return type and function type
-    llvm::Type* return_type = llvm::Type::getDoubleTy(*_context);
+    llvm::Type* return_type = _type_table[expr->return_type()];
     llvm::FunctionType* function_type = llvm::FunctionType::get(return_type, args_type, false);
 
     // create function
@@ -143,22 +142,41 @@ auto code_generator::visit(const ast::function_expression* expr) -> llvm::Value*
     return nullptr;
 }
 
-auto code_generator::add_default_types() -> void {
-    _type_table["int"] = llvm::Type::getInt32Ty(*_context);
-    _type_table["int8"] = llvm::Type::getInt8Ty(*_context);
-    _type_table["int16"] = llvm::Type::getInt16Ty(*_context);
-    _type_table["int32"] = llvm::Type::getInt32Ty(*_context);
-    _type_table["int64"] = llvm::Type::getInt64Ty(*_context);
-    _type_table["int128"] = llvm::Type::getInt128Ty(*_context);
+auto code_generator::visit(const ast::block_expression* expr) -> llvm::Value* {
+    if(expr->expressions().size() == 1)
+	return visit(expr->expressions().front().get());
 
-    _type_table["uint"] = llvm::Type::getInt32Ty(*_context);
-    _type_table["uint8"] = llvm::Type::getInt8Ty(*_context);
-    _type_table["uint16"] = llvm::Type::getInt16Ty(*_context);
-    _type_table["uint32"] = llvm::Type::getInt32Ty(*_context);
-    _type_table["uint64"] = llvm::Type::getInt64Ty(*_context);
+    for(auto it = expr->expressions().begin(); it != expr->expressions().end() - 1; ++it) {
+	if(!visit(it->get()))
+	    return nullptr;
+    }
+    return visit(expr->expressions().back().get());
+}
+
+auto code_generator::add_default_types() -> void {
+    _type_table[""]        = llvm::Type::getVoidTy(*_context);
+    _type_table["bool"]    = llvm::Type::getInt1Ty(*_context);
+
+    _type_table["int"]     = llvm::Type::getInt32Ty(*_context);
+    _type_table["int8"]    = llvm::Type::getInt8Ty(*_context);
+    _type_table["int16"]   = llvm::Type::getInt16Ty(*_context);
+    _type_table["int32"]   = llvm::Type::getInt32Ty(*_context);
+    _type_table["int64"]   = llvm::Type::getInt64Ty(*_context);
+    _type_table["int128"]  = llvm::Type::getInt128Ty(*_context);
+
+    _type_table["uint"]	   = llvm::Type::getInt32Ty(*_context);
+    _type_table["uint8"]   = llvm::Type::getInt8Ty(*_context);
+    _type_table["uint16"]  = llvm::Type::getInt16Ty(*_context);
+    _type_table["uint32"]  = llvm::Type::getInt32Ty(*_context);
+    _type_table["uint64"]  = llvm::Type::getInt64Ty(*_context);
     _type_table["uint128"] = llvm::Type::getInt128Ty(*_context);
 
-    _type_table["float"] = llvm::Type::getFloatTy(*_context);
-    _type_table["bfloat"] = llvm::Type::getBFloatTy(*_context);
-    _type_table["double"] = llvm::Type::getDoubleTy(*_context);
+    _type_table["float"]   = llvm::Type::getFloatTy(*_context);
+    _type_table["bfloat"]  = llvm::Type::getBFloatTy(*_context);
+    _type_table["double"]  = llvm::Type::getDoubleTy(*_context);
+
+    _type_table["char"]    = llvm::Type::getInt8Ty(*_context);
+    _type_table["string"]  = llvm::Type::getInt8PtrTy(*_context);
+
+    _type_table["byte"]    = llvm::Type::getInt8Ty(*_context);
 }
