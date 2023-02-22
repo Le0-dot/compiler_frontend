@@ -11,12 +11,12 @@ private:
     mutable std::map<Key, Value> _table{};
 
 public:
-    generic_table()                                = default;
+    generic_table()                                        = default;
     generic_table(const generic_table&)                    = default;
     generic_table(generic_table&&)                         = default;
     auto operator=(const generic_table&) -> generic_table& = default;
     auto operator=(generic_table&&)      -> generic_table& = default;
-    ~generic_table()                               = default;
+    ~generic_table()                                       = default;
 
     auto operator[](Key&& key) -> Value& {
 	auto found = _table.find(std::forward<Key&&>(key));

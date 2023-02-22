@@ -10,7 +10,8 @@ namespace ast {
     public:
 	virtual ~expression() = default;
 
-	virtual auto accept(visitor*) const -> llvm::Value* = 0;
+	[[nodiscard]] virtual auto type() const -> llvm::Type* = 0;
+	[[nodiscard]] virtual auto accept(visitor*) const -> llvm::Value* = 0;
     };
 
 }

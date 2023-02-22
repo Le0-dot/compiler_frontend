@@ -9,7 +9,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include "ast.hpp"
-#include "ast/block.hpp"
+#include "ast/character_literal.hpp"
 #include "generic_table.hpp"
 
 class code_generator : public ast::visitor {
@@ -30,13 +30,16 @@ public:
     auto operator=(code_generator&&)      = delete;
     ~code_generator()                     = default;
 
-    virtual auto visit(const ast::expression*)          -> llvm::Value* override;
-    virtual auto visit(const ast::literal_expression*)  -> llvm::Value* override;
-    virtual auto visit(const ast::variable_expression*) -> llvm::Value* override;
-    virtual auto visit(const ast::binary_expression*)   -> llvm::Value* override;
-    virtual auto visit(const ast::call_expression*)     -> llvm::Value* override;
-    virtual auto visit(const ast::function_expression*) -> llvm::Value* override;
-    virtual auto visit(const ast::block_expression*)    -> llvm::Value* override;
+    virtual auto visit(const ast::expression*)                   -> llvm::Value* override;
+    virtual auto visit(const ast::integer_literal_expression*)   -> llvm::Value* override;
+    virtual auto visit(const ast::floating_literal_expression*)  -> llvm::Value* override;
+    virtual auto visit(const ast::character_literal_expression*) -> llvm::Value* override;
+    virtual auto visit(const ast::string_literal_expression*)    -> llvm::Value* override;
+    virtual auto visit(const ast::variable_expression*)          -> llvm::Value* override;
+    virtual auto visit(const ast::binary_expression*)            -> llvm::Value* override;
+    virtual auto visit(const ast::call_expression*)              -> llvm::Value* override;
+    virtual auto visit(const ast::function_expression*)          -> llvm::Value* override;
+    virtual auto visit(const ast::block_expression*)             -> llvm::Value* override;
 
 private:
     auto add_default_types() -> void;

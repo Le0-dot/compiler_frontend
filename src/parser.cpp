@@ -1,7 +1,12 @@
 #include <cstdio>
 #include <memory>
 
+#include <llvm/ADT/APFloat.h>
+
 #include "ast.hpp"
+#include "ast/floating_literal.hpp"
+#include "ast/integer_literal.hpp"
+#include "global_context.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 
@@ -12,36 +17,35 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 
 // literal_expression ::= literal
 [[nodiscard]] auto parser::parse_literal() -> std::unique_ptr<ast::expression> {
-    ast::literal_types type;
+    std::unique_ptr<ast::expression> result;
     switch(_lexer.token()) {
 	case tokens::binary:
-	    type = ast::literal_types::binary;
+	    result = std::make_unique<ast::integer_literal_expression>(std::move(_lexer.identifier()), 2);
 	    break;
 	case tokens::octal: 
-	    type = ast::literal_types::octal;
+	    result = std::make_unique<ast::integer_literal_expression>(std::move(_lexer.identifier()), 8);
 	    break;
 	case tokens::decimal: 
-	    type = ast::literal_types::decimal;
+	    result = std::make_unique<ast::integer_literal_expression>(std::move(_lexer.identifier()), 10);
 	    break;
 	case tokens::hexadecimal:
-	    type = ast::literal_types::hexadecimal;
+	    result = std::make_unique<ast::integer_literal_expression>(std::move(_lexer.identifier()), 16);
 	    break;
 	case tokens::floating:
-	    type = ast::literal_types::floating;
+	    result = std::make_unique<ast::floating_literal_expression>(std::move(_lexer.identifier()));
 	    break;
 	case tokens::character:
-	    type = ast::literal_types::character;
+	    result = std::make_unique<ast::character_literal_expression>(std::move(_lexer.identifier()));
 	    break;
 	case tokens::string:
-	    type = ast::literal_types::string;
+	    result = std::make_unique<ast::string_literal_expression>(std::move(_lexer.identifier()));
 	    break;
 	default:
-	    fprintf(stderr, "error: unrecognised literal type");
+	    fprintf(stderr, "error: unrecognised literal type, with token: \"%s\"", _lexer.identifier().data());
 	    return nullptr;
     }
-    auto literal = std::move(_lexer.identifier());
     _lexer.consume();
-    return std::make_unique<ast::literal_expression>(std::move(literal), type);
+    return result;
 }
 
 // parenthesis ::= '(' expression ')'
@@ -182,9 +186,10 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
     _lexer.consume();
 
     // parse argument list in form of: arg_name arg_type
-    std::vector<std::pair<std::string, std::string>> args;
+    std::vector<std::string> args;
+    std::vector<llvm::Type*> types;
     while(_lexer.token() == tokens::identifier) {
-	auto arg_name = std::move(_lexer.identifier());
+	args.emplace_back(std::move(_lexer.identifier()));
 	_lexer.consume();
 
 	if(_lexer.token() != tokens::identifier) {
@@ -192,7 +197,12 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	    return nullptr;
 	}
 
-	args.emplace_back(std::move(arg_name), std::move(_lexer.identifier()));
+	llvm::Type* arg_type = global_context::type(_lexer.identifier());
+	if(!arg_type) {
+	    fprintf(stderr, "error: unknown argument type: \"%s\"", _lexer.identifier().data());
+	    return nullptr;
+	}
+	types.emplace_back(arg_type);
 	_lexer.consume();
 
 	if(_lexer.token() == tokens::comma)
@@ -206,12 +216,16 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
     }
     _lexer.consume();
 
-    std::string return_type{};
+    std::string return_type_str{};
     if(_lexer.token() == tokens::identifier) {
-	return_type = std::move(_lexer.identifier());
+	return_type_str = std::move(_lexer.identifier());
 	_lexer.consume();
     }
-
+    llvm::Type* return_type = global_context::type(return_type_str);
+    if(!return_type) {
+	fprintf(stderr, "error: unknown return type: \"%s\"", return_type_str.data());
+	return nullptr;
+    }
 
     // parse body of a function
     auto body = parse_block();
@@ -219,7 +233,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	return nullptr;
     fprintf(stderr, "finished parsing block\n");
 
-    return std::make_unique<ast::function_expression>(std::move(name), std::move(return_type), std::move(args), std::move(body));
+    return std::make_unique<ast::function_expression>(std::move(name), std::move(args), std::move(types), return_type, std::move(body));
 }
 
 [[nodiscard]] auto parser::parse_block() -> std::unique_ptr<ast::expression> {

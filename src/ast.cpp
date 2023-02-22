@@ -1,26 +1,83 @@
 #include "ast.hpp"
+#include "global_context.hpp"
+#include <llvm/IR/DerivedTypes.h>
+#include <stdexcept>
 
-ast::literal_expression::literal_expression(std::string&& literal, ast::literal_types type) 
-    : _value{std::move(literal)}
-    , _type{type}
+ast::integer_literal_expression::integer_literal_expression(std::string&& value, uint8_t base)
+    : _value{std::stoi(std::move(value), {}, base)}
 {}
 
-auto ast::literal_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::integer_literal_expression::type() const -> llvm::Type* {
+    return global_context::type("int");
+}
+
+[[nodiscard]] auto ast::integer_literal_expression::accept(visitor* v) const -> llvm::Value* {
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::literal_expression::value() const -> const std::string& {
+[[nodiscard]] auto ast::integer_literal_expression::value() const -> int {
     return _value;
 }
 
-[[nodiscard]] auto ast::literal_expression::type() const -> ast::literal_types {
-    return _type;
+
+ast::floating_literal_expression::floating_literal_expression(std::string&& value)
+    : _value{std::stod(std::move(value))}
+{}
+
+[[nodiscard]] auto ast::floating_literal_expression::type() const -> llvm::Type* {
+    return global_context::type("double");
+}
+
+[[nodiscard]] auto ast::floating_literal_expression::accept(visitor* v) const -> llvm::Value* {
+    return v->visit(this);
+}
+
+[[nodiscard]] auto ast::floating_literal_expression::value() const -> double {
+    return _value;
+}
+
+
+ast::character_literal_expression::character_literal_expression(std::string&& value)
+    : _value{value[0]}
+{}
+
+[[nodiscard]] auto ast::character_literal_expression::type() const -> llvm::Type* {
+    return global_context::type("char");
+}
+
+[[nodiscard]] auto ast::character_literal_expression::accept(visitor* v) const -> llvm::Value* {
+    return v->visit(this);
+}
+
+[[nodiscard]] auto ast::character_literal_expression::value() const -> char {
+    return _value;
+}
+
+
+ast::string_literal_expression::string_literal_expression(std::string&& value)
+    : _value{std::move(value)}
+{}
+
+[[nodiscard]] auto ast::string_literal_expression::type() const -> llvm::Type* {
+    return global_context::type("string");
+}
+
+[[nodiscard]] auto ast::string_literal_expression::accept(visitor* v) const -> llvm::Value* {
+    return v->visit(this);
+}
+
+[[nodiscard]] auto ast::string_literal_expression::value() const -> const std::string& {
+    return _value;
 }
 
 
 ast::variable_expression::variable_expression(std::string&& name) : _name{std::move(name)} {}
 
-auto ast::variable_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::variable_expression::type() const -> llvm::Type* {
+
+}
+
+[[nodiscard]] auto ast::variable_expression::accept(visitor* v) const -> llvm::Value* {
     return v->visit(this);
 }
 
@@ -35,7 +92,11 @@ ast::binary_expression::binary_expression(std::string&& op, std::unique_ptr<expr
     , _rhs{std::move(rhs)}
 {}
 
-auto ast::binary_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::binary_expression::type() const -> llvm::Type* {
+
+}
+
+[[nodiscard]] auto ast::binary_expression::accept(visitor* v) const -> llvm::Value* {
     return v->visit(this);
 }
 
@@ -57,7 +118,11 @@ ast::call_expression::call_expression(std::string&& callee, std::vector<std::uni
     , _args{std::move(args)}
 {}
 
-auto ast::call_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::call_expression::type() const -> llvm::Type* {
+
+}
+
+[[nodiscard]] auto ast::call_expression::accept(visitor* v) const -> llvm::Value* {
     return v->visit(this);
 }
 
@@ -70,15 +135,19 @@ auto ast::call_expression::accept(visitor* v) const -> llvm::Value* {
 }
 
 
-ast::function_expression::function_expression(std::string&& name, std::string&& return_type
-	, std::vector<std::pair<std::string, std::string>>&& args, std::unique_ptr<expression>&& body)
+ast::function_expression::function_expression(std::string&& name, std::vector<std::string>&& args,
+	std::vector<llvm::Type*>&& type_list, llvm::Type* return_type, std::unique_ptr<expression>&& body)
     : _name{std::move(name)}
-    , _return_type{std::move(return_type)}
     , _args{std::move(args)}
+    , _type{llvm::FunctionType::get(return_type, type_list, false)}
     , _body{std::move(body)}
 {}
 
-auto ast::function_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::function_expression::type() const -> llvm::Type* {
+    return _type;
+}
+
+[[nodiscard]] auto ast::function_expression::accept(visitor* v) const -> llvm::Value* {
     return v->visit(this);
 }
 
@@ -86,11 +155,7 @@ auto ast::function_expression::accept(visitor* v) const -> llvm::Value* {
     return _name;
 }
 
-[[nodiscard]] auto ast::function_expression::return_type() const -> const std::string& {
-    return _return_type;
-}
-
-[[nodiscard]] auto ast::function_expression::args() const -> const std::vector<std::pair<std::string, std::string>>& {
+[[nodiscard]] auto ast::function_expression::args() const -> const std::vector<std::string>& {
     return _args;
 }
 
@@ -103,7 +168,13 @@ ast::block_expression::block_expression(std::vector<std::unique_ptr<ast::express
     : _expressions{std::move(expressions)}
 {}
 
-auto ast::block_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::block_expression::type() const -> llvm::Type* {
+    if(_expressions.empty())
+	return global_context::type("");
+    return _expressions.back()->type(); // May be not a return expression so should change it to void
+}
+
+[[nodiscard]] auto ast::block_expression::accept(visitor* v) const -> llvm::Value* {
     return v->visit(this);
 }
 

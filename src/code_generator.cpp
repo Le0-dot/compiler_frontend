@@ -11,40 +11,33 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Verifier.h>
 
+#include "ast/character_literal.hpp"
 #include "code_generator.hpp"
+#include "global_context.hpp"
 
 code_generator::code_generator(const std::string& module_name)
-    : _context{std::make_unique<llvm::LLVMContext>()}
-    , _module{std::make_unique<llvm::Module>(module_name, *_context)}
-    , _builder{std::make_unique<llvm::IRBuilder<>>(*_context)}
-{
-    add_default_types();
-}
+    : _module{std::make_unique<llvm::Module>(module_name, global_context::context())}
+    , _builder{std::make_unique<llvm::IRBuilder<>>(global_context::context())}
+{}
 
 auto code_generator::visit(const ast::expression* expr) -> llvm::Value* {
     return expr->accept(this);
 }
 
-auto code_generator::visit(const ast::literal_expression* expr) -> llvm::Value* {
-    switch (expr->type()) {
-	case ast::literal_types::binary:
-	    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*_context), expr->value(), 2);
-	case ast::literal_types::octal:
-	    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*_context), expr->value(), 8);
-	case ast::literal_types::decimal:
-	    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*_context), expr->value(), 10);
-	case ast::literal_types::hexadecimal:
-	    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*_context), expr->value(), 16);
-	case ast::literal_types::floating:
-	    return llvm::ConstantFP::get(*_context, llvm::APFloat(std::stod(expr->value())));
-	case ast::literal_types::character:
-	    return llvm::ConstantInt::get(llvm::Type::getInt8Ty(*_context), static_cast<uint8_t>(expr->value()[0]));
-	case ast::literal_types::string:
-	    return nullptr;
-	default:
-	    fprintf(stderr, "error: unrecognised constant type");
-	    return nullptr;
-    }
+auto code_generator::visit(const ast::integer_literal_expression* expr) -> llvm::Value* {
+    return llvm::ConstantInt::get(expr->type(), expr->value());
+}
+
+auto code_generator::visit(const ast::floating_literal_expression* expr) -> llvm::Value* {
+    return llvm::ConstantFP::get(global_context::context(), llvm::APFloat(expr->value()));
+}
+
+auto code_generator::visit(const ast::character_literal_expression* expr) -> llvm::Value* {
+    return llvm::ConstantInt::get(expr->type(), expr->value());
+}
+
+auto code_generator::visit(const ast::string_literal_expression* expr) -> llvm::Value* {
+    return nullptr;
 }
 
 auto code_generator::visit(const ast::variable_expression* expr) -> llvm::Value* {
@@ -99,35 +92,19 @@ auto code_generator::visit(const ast::call_expression* expr) -> llvm::Value* {
 }
 
 auto code_generator::visit(const ast::function_expression* expr) -> llvm::Value* {
-    // set up argument list types
-    std::vector<llvm::Type*> args_type;
-    args_type.reserve(expr->args().size());
-    for(const auto& [_, type_str]: expr->args()) {
-	llvm::Type* type = _type_table[type_str];
-	if(!type) {
-	    fprintf(stderr, "error: unknown type \"%s\"", type_str.data());
-	    return nullptr;
-	}
-	args_type.push_back(type);
-    }
-
-    // set up return type and function type
-    llvm::Type* return_type = _type_table[expr->return_type()];
-    llvm::FunctionType* function_type = llvm::FunctionType::get(return_type, args_type, false);
-
+    llvm::FunctionType* func_type = static_cast<llvm::FunctionType*>(expr->type());
     // create function
-    llvm::Function* function = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, expr->name(), _module.get());
+    llvm::Function* function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, expr->name(), _module.get());
 
     // set arguments names, types and add fuction arguments to named values
     _named_values.clear();
-    std::ranges::for_each(expr->args(), [this, arg = function->args().begin()] (const auto arg_pair) mutable {
-	arg->setName(arg_pair.first);
-	_named_values[arg_pair.first] = &*arg++;
-	fprintf(stderr, "found argument with name = \"%s\"; type = \"%s\";\n", arg_pair.first.data(), arg_pair.second.data());
+    std::ranges::for_each(expr->args(), [this, farg = function->arg_begin()] (const auto& arg) mutable {
+	farg->setName(arg);
+	_named_values[arg] = farg++;
     });
 
     // create basic block to write to
-    llvm::BasicBlock* block = llvm::BasicBlock::Create(*_context, "entry", function);
+    llvm::BasicBlock* block = llvm::BasicBlock::Create(global_context::context(), "entry", function);
     _builder->SetInsertPoint(block);
 
     if(llvm::Value* return_value = visit(expr->body())) {
@@ -151,32 +128,4 @@ auto code_generator::visit(const ast::block_expression* expr) -> llvm::Value* {
 	    return nullptr;
     }
     return visit(expr->expressions().back().get());
-}
-
-auto code_generator::add_default_types() -> void {
-    _type_table[""]        = llvm::Type::getVoidTy(*_context);
-    _type_table["bool"]    = llvm::Type::getInt1Ty(*_context);
-
-    _type_table["int"]     = llvm::Type::getInt32Ty(*_context);
-    _type_table["int8"]    = llvm::Type::getInt8Ty(*_context);
-    _type_table["int16"]   = llvm::Type::getInt16Ty(*_context);
-    _type_table["int32"]   = llvm::Type::getInt32Ty(*_context);
-    _type_table["int64"]   = llvm::Type::getInt64Ty(*_context);
-    _type_table["int128"]  = llvm::Type::getInt128Ty(*_context);
-
-    _type_table["uint"]	   = llvm::Type::getInt32Ty(*_context);
-    _type_table["uint8"]   = llvm::Type::getInt8Ty(*_context);
-    _type_table["uint16"]  = llvm::Type::getInt16Ty(*_context);
-    _type_table["uint32"]  = llvm::Type::getInt32Ty(*_context);
-    _type_table["uint64"]  = llvm::Type::getInt64Ty(*_context);
-    _type_table["uint128"] = llvm::Type::getInt128Ty(*_context);
-
-    _type_table["float"]   = llvm::Type::getFloatTy(*_context);
-    _type_table["bfloat"]  = llvm::Type::getBFloatTy(*_context);
-    _type_table["double"]  = llvm::Type::getDoubleTy(*_context);
-
-    _type_table["char"]    = llvm::Type::getInt8Ty(*_context);
-    _type_table["string"]  = llvm::Type::getInt8PtrTy(*_context);
-
-    _type_table["byte"]    = llvm::Type::getInt8Ty(*_context);
 }

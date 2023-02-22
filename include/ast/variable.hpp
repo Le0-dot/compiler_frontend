@@ -13,7 +13,8 @@ namespace ast {
     public:
 	variable_expression(std::string&&);
 
-	virtual auto accept(visitor*) const -> llvm::Value* override;
+	[[nodiscard]] virtual auto type() const -> llvm::Type* override;
+	[[nodiscard]] virtual auto accept(visitor*) const -> llvm::Value* override;
 
 	[[nodiscard]] auto name() const -> const std::string&;
     };
