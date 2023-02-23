@@ -10,8 +10,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB_RECURSE SRC LIST_DIRECTORIES false src/*.cpp)
+file(GLOB_RECURSE AST LIST_DIRECTORIES false src/ast/*.cpp)
 
-add_executable(${PROJECT_NAME} ${SRC})
+add_executable(${PROJECT_NAME} ${SRC} ${AST})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 target_include_directories(${PROJECT_NAME} PUBLIC ${LLVM_INCLUDE_DIRS})
