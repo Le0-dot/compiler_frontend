@@ -1,8 +1,8 @@
-#include "global_context.hpp"
-
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
+
+#include "global_context.hpp"
 
 global_context::global_context() 
     : _context{std::make_unique<llvm::LLVMContext>()}
@@ -27,9 +27,16 @@ auto global_context::instance() -> global_context& {
     return _types[type_name];
 }
 
-
 [[nodiscard]] auto global_context::type(const std::string& type_name) -> llvm::Type* {
     return instance().get_type(type_name);
+}
+
+[[nodiscard]] auto global_context::get_type(const std::vector<llvm::Type*>& arg_types, llvm::Type* ret_type) -> llvm::FunctionType* {
+    return llvm::FunctionType::get(ret_type, arg_types, false);
+}
+
+[[nodiscard]] auto global_context::type(const std::vector<llvm::Type*>& arg_types, llvm::Type* ret_type) -> llvm::FunctionType* {
+    return instance().get_type(arg_types, ret_type);
 }
 
 auto global_context::add_default_types() -> void {

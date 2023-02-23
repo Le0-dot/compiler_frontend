@@ -5,7 +5,7 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Type.h>
 
-#include "generic_table.hpp"
+#include "tables.hpp"
 
 class global_context {
 private:
@@ -20,6 +20,9 @@ public:
 
     [[nodiscard]] auto get_type(const std::string&)    -> llvm::Type*;
     [[nodiscard]] static auto type(const std::string&) -> llvm::Type*;
+
+    [[nodiscard]] auto get_type(const std::vector<llvm::Type*>&, llvm::Type*)    -> llvm::FunctionType*;
+    [[nodiscard]] static auto type(const std::vector<llvm::Type*>&, llvm::Type*) -> llvm::FunctionType*;
 
 private:
     global_context();

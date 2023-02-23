@@ -11,7 +11,7 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Verifier.h>
 
-#include "ast/character_literal.hpp"
+#include "ast.hpp"
 #include "code_generator.hpp"
 #include "global_context.hpp"
 

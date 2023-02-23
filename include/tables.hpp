@@ -4,6 +4,7 @@
 #include <string>
 
 #include <llvm/IR/Type.h>
+#include <llvm/IR/Function.h>
 
 template<typename Key, typename Value, Value DefaultValue = Value{}>
 class generic_table {
@@ -47,5 +48,7 @@ public:
     }
 };
 
-using type_table = generic_table<std::string, llvm::Type*>;
-using operator_table = generic_table<std::string, uint8_t, 1>;
+using type_table            = generic_table<std::string, llvm::Type*>;
+using symbol_table          = generic_table<std::string, llvm::Type*>;
+using function_symbol_table = generic_table<std::string, llvm::FunctionType*>;
+using operator_table        = generic_table<std::string, uint8_t, 1>;

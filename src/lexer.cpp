@@ -1,8 +1,8 @@
-#include "lexer.hpp"
-
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+
+#include "lexer.hpp"
 
 std::map<std::string, uint8_t> lexer::_tokens = {
     {"return", tokens::return_token},

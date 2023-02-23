@@ -10,7 +10,6 @@
 
 #include "ast.hpp"
 #include "ast/character_literal.hpp"
-#include "generic_table.hpp"
 
 class code_generator : public ast::visitor {
 private:
@@ -18,7 +17,6 @@ private:
     std::unique_ptr<llvm::Module> _module;
     std::unique_ptr<llvm::IRBuilder<>> _builder;
     std::unordered_map<std::string, llvm::Value*> _named_values{};
-    type_table _type_table{};
 
 public:
     code_generator(const std::string&);
