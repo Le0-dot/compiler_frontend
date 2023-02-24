@@ -5,11 +5,11 @@ ast::variable_expression::variable_expression(std::string&& name)
     : _name{std::move(name)} 
 {}
 
-[[nodiscard]] auto ast::variable_expression::type() const -> llvm::Type* {
-
+[[nodiscard]] auto ast::variable_expression::accept(value_visitor* v) const -> llvm::Value* {
+    return v->visit(this);
 }
 
-[[nodiscard]] auto ast::variable_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::variable_expression::accept(type_visitor* v) const -> llvm::Type* {
     return v->visit(this);
 }
 

@@ -6,11 +6,11 @@ ast::integer_literal_expression::integer_literal_expression(std::string&& value,
     : _value{std::stoi(std::move(value), {}, base)}
 {}
 
-[[nodiscard]] auto ast::integer_literal_expression::type() const -> llvm::Type* {
-    return global_context::type("int");
+[[nodiscard]] auto ast::integer_literal_expression::accept(value_visitor* v) const -> llvm::Value* {
+    return v->visit(this);
 }
 
-[[nodiscard]] auto ast::integer_literal_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::integer_literal_expression::accept(type_visitor* v) const -> llvm::Type* {
     return v->visit(this);
 }
 

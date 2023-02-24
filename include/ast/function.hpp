@@ -14,18 +14,22 @@ namespace ast {
     private:
 	std::string _name;
 	std::vector<std::string> _args;
-	llvm::FunctionType* _type;
+	std::vector<std::string> _types;
+	std::string _ret_type;
 	std::unique_ptr<expression> _body;
 
     public:
-	function_expression(std::string&&, std::vector<std::string>&&, std::vector<llvm::Type*>&&, llvm::Type*, std::unique_ptr<expression>&&);
+	function_expression(std::string&&, std::vector<std::string>&&,
+		std::vector<std::string>&&, std::string&&, std::unique_ptr<expression>&&);
 
-	[[nodiscard]] virtual auto type() const -> llvm::Type* override;
-	[[nodiscard]] virtual auto accept(visitor* v) const -> llvm::Value* override;
+	[[nodiscard]] virtual auto accept(value_visitor* v) const -> llvm::Value* override;
+	[[nodiscard]] virtual auto accept(type_visitor* v) const -> llvm::Type* override;
 
-	[[nodiscard]] auto name() const -> const std::string&;
-	[[nodiscard]] auto args() const -> const std::vector<std::string>&;
-	[[nodiscard]] auto body() const -> const expression*;
+	[[nodiscard]] auto name()        const -> const std::string&;
+	[[nodiscard]] auto args()        const -> const std::vector<std::string>&;
+	[[nodiscard]] auto types()       const -> const std::vector<std::string>&;
+	[[nodiscard]] auto return_type() const -> const std::string&;
+	[[nodiscard]] auto body()        const -> const expression*;
     };
 
 }

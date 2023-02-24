@@ -6,11 +6,11 @@ ast::call_expression::call_expression(std::string&& callee, std::vector<std::uni
     , _args{std::move(args)}
 {}
 
-[[nodiscard]] auto ast::call_expression::type() const -> llvm::Type* {
-
+[[nodiscard]] auto ast::call_expression::accept(value_visitor* v) const -> llvm::Value* {
+    return v->visit(this);
 }
 
-[[nodiscard]] auto ast::call_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::call_expression::accept(type_visitor* v) const -> llvm::Type* {
     return v->visit(this);
 }
 

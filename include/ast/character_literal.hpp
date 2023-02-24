@@ -14,8 +14,8 @@ namespace ast {
     public:
 	character_literal_expression(std::string&&);
 
-	[[nodiscard]] virtual auto type() const -> llvm::Type* override;
-	[[nodiscard]] virtual auto accept(visitor*) const -> llvm::Value* override;
+	[[nodiscard]] virtual auto accept(value_visitor*) const -> llvm::Value* override;
+	[[nodiscard]] virtual auto accept(type_visitor*) const -> llvm::Type* override;
 
 	[[nodiscard]] auto value() const -> char;
     };

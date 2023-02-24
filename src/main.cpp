@@ -2,6 +2,7 @@
 
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "semantic_analyzer.hpp"
 #include "code_generator.hpp"
 
 int main(int argc, char** argv) {
@@ -20,6 +21,7 @@ int main(int argc, char** argv) {
     t["/"] = 3;
 
     auto p = parser(std::move(l), std::move(t));
+    auto sa = semantic_analyzer{};
     auto cg = code_generator(module_name);
     if(auto fe = p.parse_function()) {
 	fprintf(stdout, "parsed a function\n");

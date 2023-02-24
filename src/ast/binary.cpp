@@ -7,11 +7,11 @@ ast::binary_expression::binary_expression(std::string&& op, std::unique_ptr<expr
     , _rhs{std::move(rhs)}
 {}
 
-[[nodiscard]] auto ast::binary_expression::type() const -> llvm::Type* {
-
+[[nodiscard]] auto ast::binary_expression::accept(value_visitor* v) const -> llvm::Value* {
+    return v->visit(this);
 }
 
-[[nodiscard]] auto ast::binary_expression::accept(visitor* v) const -> llvm::Value* {
+[[nodiscard]] auto ast::binary_expression::accept(type_visitor* v) const -> llvm::Type* {
     return v->visit(this);
 }
 
