@@ -187,7 +187,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 
     // parse argument list in form of: arg_name arg_type
     std::vector<std::string> args;
-    std::vector<llvm::Type*> types;
+    std::vector<std::string> arg_types;
     while(_lexer.token() == tokens::identifier) {
 	args.emplace_back(std::move(_lexer.identifier()));
 	_lexer.consume();
@@ -197,12 +197,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	    return nullptr;
 	}
 
-	llvm::Type* arg_type = global_context::type(_lexer.identifier());
-	if(!arg_type) {
-	    fprintf(stderr, "error: unknown argument type: \"%s\"", _lexer.identifier().data());
-	    return nullptr;
-	}
-	types.emplace_back(arg_type);
+	arg_types.emplace_back(std::move(_lexer.identifier()));
 	_lexer.consume();
 
 	if(_lexer.token() == tokens::comma)
@@ -216,15 +211,10 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
     }
     _lexer.consume();
 
-    std::string return_type_str{};
+    std::string return_type{};
     if(_lexer.token() == tokens::identifier) {
-	return_type_str = std::move(_lexer.identifier());
+	return_type = std::move(_lexer.identifier());
 	_lexer.consume();
-    }
-    llvm::Type* return_type = global_context::type(return_type_str);
-    if(!return_type) {
-	fprintf(stderr, "error: unknown return type: \"%s\"", return_type_str.data());
-	return nullptr;
     }
 
     // parse body of a function
@@ -233,7 +223,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
 	return nullptr;
     fprintf(stderr, "finished parsing block\n");
 
-    return std::make_unique<ast::function_expression>(std::move(name), std::move(args), std::move(types), return_type, std::move(body));
+    return std::make_unique<ast::function_expression>(std::move(name), std::move(args), std::move(arg_types), std::move(return_type), std::move(body));
 }
 
 [[nodiscard]] auto parser::parse_block() -> std::unique_ptr<ast::expression> {

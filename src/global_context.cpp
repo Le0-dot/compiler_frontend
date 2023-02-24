@@ -31,11 +31,20 @@ auto global_context::instance() -> global_context& {
     return instance().get_type(type_name);
 }
 
-[[nodiscard]] auto global_context::get_type(const std::vector<llvm::Type*>& arg_types, llvm::Type* ret_type) -> llvm::FunctionType* {
-    return llvm::FunctionType::get(ret_type, arg_types, false);
+[[nodiscard]] auto global_context::get_type(const std::vector<std::string>& arg_types, const std::string& ret_type) -> llvm::FunctionType* {
+    std::vector<llvm::Type*> param_types;
+    llvm::Type* type;
+    for(const auto& arg_type: arg_types) {
+	type = get_type(arg_type);
+	if(!type)
+	    return nullptr;
+	param_types.push_back(type);
+    }
+    type = get_type(ret_type);
+    return llvm::FunctionType::get(type, param_types, false);
 }
 
-[[nodiscard]] auto global_context::type(const std::vector<llvm::Type*>& arg_types, llvm::Type* ret_type) -> llvm::FunctionType* {
+[[nodiscard]] auto global_context::type(const std::vector<std::string>& arg_types, const std::string& ret_type) -> llvm::FunctionType* {
     return instance().get_type(arg_types, ret_type);
 }
 

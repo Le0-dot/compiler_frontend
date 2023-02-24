@@ -11,7 +11,7 @@
 #include "ast.hpp"
 #include "ast/character_literal.hpp"
 
-class code_generator : public ast::visitor {
+class code_generator : public ast::value_visitor {
 private:
     std::unique_ptr<llvm::LLVMContext> _context;
     std::unique_ptr<llvm::Module> _module;

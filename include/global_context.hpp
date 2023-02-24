@@ -21,8 +21,8 @@ public:
     [[nodiscard]] auto get_type(const std::string&)    -> llvm::Type*;
     [[nodiscard]] static auto type(const std::string&) -> llvm::Type*;
 
-    [[nodiscard]] auto get_type(const std::vector<llvm::Type*>&, llvm::Type*)    -> llvm::FunctionType*;
-    [[nodiscard]] static auto type(const std::vector<llvm::Type*>&, llvm::Type*) -> llvm::FunctionType*;
+    [[nodiscard]] auto get_type(const std::vector<std::string>&, const std::string&)    -> llvm::FunctionType*;
+    [[nodiscard]] static auto type(const std::vector<std::string>&, const std::string&) -> llvm::FunctionType*;
 
 private:
     global_context();
