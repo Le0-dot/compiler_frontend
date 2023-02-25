@@ -25,6 +25,9 @@ int main(int argc, char** argv) {
     auto cg = code_generator(module_name);
     if(auto fe = p.parse_function()) {
 	fprintf(stdout, "parsed a function\n");
+	if(!fe->accept(&sa)) {
+	    return -1;
+	}
 	if(auto *fir = fe->accept(&cg)) {
 	    fprintf(stderr, "read function definition\n");
 	    fir->print(llvm::errs());

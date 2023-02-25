@@ -2,7 +2,7 @@
 #include "ast/visitor.hpp"
 
 ast::function_expression::function_expression(std::string&& name, std::vector<std::string>&& args,
-	std::vector<std::string>&& type_list, std::string&& return_type, std::unique_ptr<expression>&& body)
+	std::vector<std::string>&& type_list, std::string&& return_type, std::unique_ptr<block_expression>&& body)
     : _name{std::move(name)}
     , _args{std::move(args)}
     , _types{std::move(type_list)}
@@ -14,7 +14,7 @@ ast::function_expression::function_expression(std::string&& name, std::vector<st
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::function_expression::accept(type_visitor* v) const -> llvm::Type* {
+[[nodiscard]] auto ast::function_expression::accept(type_visitor* v) -> llvm::Type* {
     return v->visit(this);
 }
 
@@ -34,8 +34,10 @@ ast::function_expression::function_expression(std::string&& name, std::vector<st
     return _ret_type;
 }
 
-[[nodiscard]] auto ast::function_expression::body() const -> const ast::expression* {
+[[nodiscard]] auto ast::function_expression::body() const -> const ast::block_expression* {
     return _body.get();
 }
 
-
+[[nodiscard]] auto ast::function_expression::body() -> ast::block_expression* {
+    return _body.get();
+}

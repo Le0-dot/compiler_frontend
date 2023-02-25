@@ -1,4 +1,5 @@
 #include "ast/binary.hpp"
+#include "ast/expression.hpp"
 #include "ast/visitor.hpp"
 
 ast::binary_expression::binary_expression(std::string&& op, std::unique_ptr<expression>&& lhs, std::unique_ptr<expression>&& rhs)
@@ -11,7 +12,7 @@ ast::binary_expression::binary_expression(std::string&& op, std::unique_ptr<expr
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::binary_expression::accept(type_visitor* v) const -> llvm::Type* {
+[[nodiscard]] auto ast::binary_expression::accept(type_visitor* v) -> llvm::Type* {
     return v->visit(this);
 }
 
@@ -27,3 +28,10 @@ ast::binary_expression::binary_expression(std::string&& op, std::unique_ptr<expr
     return _rhs.get();
 }
 
+[[nodiscard]] auto ast::binary_expression::lhs() -> ast::expression* {
+    return _lhs.get();
+}
+
+[[nodiscard]] auto ast::binary_expression::rhs() -> ast::expression* {
+    return _rhs.get();
+}

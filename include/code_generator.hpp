@@ -9,7 +9,6 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include "ast.hpp"
-#include "ast/character_literal.hpp"
 
 class code_generator : public ast::value_visitor {
 private:
@@ -38,6 +37,7 @@ public:
     virtual auto visit(const ast::call_expression*)              -> llvm::Value* override;
     virtual auto visit(const ast::function_expression*)          -> llvm::Value* override;
     virtual auto visit(const ast::block_expression*)             -> llvm::Value* override;
+    virtual auto visit(const ast::implicit_cast*)                -> llvm::Value* override;
 
 private:
     auto add_default_types() -> void;

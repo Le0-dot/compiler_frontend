@@ -10,7 +10,7 @@ ast::floating_literal_expression::floating_literal_expression(std::string&& valu
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::floating_literal_expression::accept(type_visitor* v) const -> llvm::Type* {
+[[nodiscard]] auto ast::floating_literal_expression::accept(type_visitor* v) -> llvm::Type* {
     return v->visit(this);
 }
 

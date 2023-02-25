@@ -163,7 +163,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
     return lhs;
 }
 
-[[nodiscard]] auto parser::parse_function() -> std::unique_ptr<ast::expression> {
+[[nodiscard]] auto parser::parse_function() -> std::unique_ptr<ast::function_expression> {
     // check if function definition starts with 'function' key word
     if(_lexer.identifier() != "function") {
 	fprintf(stderr, "expected 'function' in function definition");
@@ -226,7 +226,7 @@ parser::parser(lexer&& _lexer, operator_table&& _table)
     return std::make_unique<ast::function_expression>(std::move(name), std::move(args), std::move(arg_types), std::move(return_type), std::move(body));
 }
 
-[[nodiscard]] auto parser::parse_block() -> std::unique_ptr<ast::expression> {
+[[nodiscard]] auto parser::parse_block() -> std::unique_ptr<ast::block_expression> {
     if(_lexer.token() != tokens::eol && _lexer.token() != tokens::left_curly_brace) {
 	fprintf(stderr, "error: expected new line or '{' in the beginning of the block");
 	return nullptr;

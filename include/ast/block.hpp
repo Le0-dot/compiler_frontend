@@ -1,9 +1,9 @@
 #pragma once
 
 #include <vector>
-#include <memory>
 
 #include "expression.hpp"
+#include "implicit_cast.hpp"
 
 namespace ast {
 
@@ -15,9 +15,13 @@ namespace ast {
 	block_expression(std::vector<std::unique_ptr<expression>>&&);
 
 	[[nodiscard]] virtual auto accept(value_visitor *) const -> llvm::Value* override;
-	[[nodiscard]] virtual auto accept(type_visitor *) const -> llvm::Type* override;
+	[[nodiscard]] virtual auto accept(type_visitor *) -> llvm::Type* override;
 
 	[[nodiscard]] auto expressions() const -> const std::vector<std::unique_ptr<expression>>&;
+
+	auto insert_result_cast(cast_builder auto&& builder = {}) -> void {
+	    _expressions.back() = std::invoke(builder, std::move(_expressions.back()));
+	}
     };
 
 }

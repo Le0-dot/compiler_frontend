@@ -9,7 +9,7 @@ ast::variable_expression::variable_expression(std::string&& name)
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::variable_expression::accept(type_visitor* v) const -> llvm::Type* {
+[[nodiscard]] auto ast::variable_expression::accept(type_visitor* v) -> llvm::Type* {
     return v->visit(this);
 }
 

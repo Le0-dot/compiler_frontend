@@ -12,6 +12,7 @@
 #include <llvm/IR/Verifier.h>
 
 #include "ast.hpp"
+#include "ast/implicit_cast.hpp"
 #include "code_generator.hpp"
 #include "global_context.hpp"
 
@@ -128,4 +129,8 @@ auto code_generator::visit(const ast::block_expression* expr) -> llvm::Value* {
 	    return nullptr;
     }
     return visit(expr->expressions().back().get());
+}
+
+auto code_generator::visit(const ast::implicit_cast* cast) -> llvm::Value* {
+    return cast->subject()->accept(this); // placeholder
 }

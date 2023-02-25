@@ -10,5 +10,6 @@
 #include "ast/call.hpp"
 #include "ast/binary.hpp"
 #include "ast/block.hpp"
+#include "ast/implicit_cast.hpp"
 
 #include "ast/visitor.hpp"

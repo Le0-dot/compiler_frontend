@@ -15,14 +15,14 @@ public:
     auto operator=(semantic_analyzer&&)         = delete;
     ~semantic_analyzer()                        = default;
     
-    virtual auto visit(const ast::expression*)                   -> llvm::Type* override;
-    virtual auto visit(const ast::integer_literal_expression*)   -> llvm::Type* override;
-    virtual auto visit(const ast::floating_literal_expression*)  -> llvm::Type* override;
-    virtual auto visit(const ast::character_literal_expression*) -> llvm::Type* override;
-    virtual auto visit(const ast::string_literal_expression*)    -> llvm::Type* override;
-    virtual auto visit(const ast::variable_expression*)          -> llvm::Type* override;
-    virtual auto visit(const ast::binary_expression*)            -> llvm::Type* override;
-    virtual auto visit(const ast::call_expression*)              -> llvm::Type* override;
-    virtual auto visit(const ast::function_expression*)          -> llvm::Type* override;
-    virtual auto visit(const ast::block_expression*)             -> llvm::Type* override;
+    virtual auto visit(ast::expression*)                   -> llvm::Type* override;
+    virtual auto visit(ast::integer_literal_expression*)   -> llvm::Type* override;
+    virtual auto visit(ast::floating_literal_expression*)  -> llvm::Type* override;
+    virtual auto visit(ast::character_literal_expression*) -> llvm::Type* override;
+    virtual auto visit(ast::string_literal_expression*)    -> llvm::Type* override;
+    virtual auto visit(ast::variable_expression*)          -> llvm::Type* override;
+    virtual auto visit(ast::binary_expression*)            -> llvm::Type* override;
+    virtual auto visit(ast::call_expression*)              -> llvm::Type* override;
+    virtual auto visit(ast::function_expression*)          -> llvm::Type* override;
+    virtual auto visit(ast::block_expression*)             -> llvm::Type* override;
 };

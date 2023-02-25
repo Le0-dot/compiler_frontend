@@ -10,7 +10,7 @@ ast::call_expression::call_expression(std::string&& callee, std::vector<std::uni
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::call_expression::accept(type_visitor* v) const -> llvm::Type* {
+[[nodiscard]] auto ast::call_expression::accept(type_visitor* v) -> llvm::Type* {
     return v->visit(this);
 }
 
@@ -22,3 +22,6 @@ ast::call_expression::call_expression(std::string&& callee, std::vector<std::uni
     return _args;
 }
 
+[[nodiscard]] auto ast::call_expression::args() -> std::vector<std::unique_ptr<expression>>& {
+    return _args;
+}
