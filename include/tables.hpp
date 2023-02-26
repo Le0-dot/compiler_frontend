@@ -5,6 +5,7 @@
 
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
 
 template<typename Key, typename Value, Value DefaultValue = Value{}>
 class generic_table {
@@ -52,3 +53,6 @@ using type_table            = generic_table<std::string, llvm::Type*>;
 using symbol_table          = generic_table<std::string, llvm::Type*>;
 using function_symbol_table = generic_table<std::string, llvm::FunctionType*>;
 using operator_table        = generic_table<std::string, uint8_t, 1>;
+
+using cast_function = llvm::Value*(llvm::IRBuilderBase*, llvm::Value*);
+using cast_table    = std::map<std::pair<llvm::Type*, llvm::Type*>, std::function<cast_function>>;
