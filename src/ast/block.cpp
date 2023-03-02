@@ -7,10 +7,12 @@ ast::block_expression::block_expression(std::vector<std::unique_ptr<ast::express
 {}
 
 [[nodiscard]] auto ast::block_expression::accept(value_visitor* v) const -> llvm::Value* {
+    fprintf(stderr, "block accept value\n");
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::block_expression::accept(type_visitor* v) -> llvm::Type* {
+[[nodiscard]] auto ast::block_expression::accept(type_visitor* v) -> types::type* {
+    fprintf(stderr, "block accept type\n");
     return v->visit(this);
 }
 

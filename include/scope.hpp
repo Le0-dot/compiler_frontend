@@ -3,6 +3,7 @@
 #include <forward_list>
 
 #include "tables.hpp"
+#include "types.hpp"
 
 class scope {
 private:
@@ -10,11 +11,11 @@ private:
     function_symbol_table _functions{};
 
 public:
-    auto new_symbol(const std::string&, llvm::Type*) -> void;
-    auto new_function(const std::string&, llvm::FunctionType*) -> void;
+    auto new_symbol(const std::string&, types::type*) -> void;
+    auto new_function(const std::string&, types::function_type*) -> void;
 
-    [[nodiscard]] auto search_symbol(const std::string&) const -> llvm::Type*;
-    [[nodiscard]] auto search_function(const std::string&) const -> llvm::FunctionType*;
+    [[nodiscard]] auto search_symbol(const std::string&) -> types::type*;
+    [[nodiscard]] auto search_function(const std::string&) -> types::function_type*;
 
     scope()                      = default;
     scope(const scope&)          = delete;
@@ -39,9 +40,9 @@ public:
     auto new_scope() -> scope&;
     auto delete_scope() -> void;
 
-    auto new_symbol(const std::string&, llvm::Type*) -> void;
-    auto new_function(const std::string&, llvm::FunctionType*) -> void;
+    auto new_symbol(const std::string&, types::type*) -> void;
+    auto new_function(const std::string&, types::function_type*) -> void;
 
-    [[nodiscard]] auto search_symbol(const std::string&) const -> llvm::Type*;
-    [[nodiscard]] auto search_function(const std::string&) const -> llvm::FunctionType*;
+    [[nodiscard]] auto search_symbol(const std::string&) -> types::type*;
+    [[nodiscard]] auto search_function(const std::string&) -> types::function_type*;
 };

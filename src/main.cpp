@@ -28,6 +28,7 @@ int main(int argc, char** argv) {
 	if(!fe->accept(&sa)) {
 	    return -1;
 	}
+	fprintf(stderr, "finished semantic analysis\n");
 	if(auto *fir = fe->accept(&cg)) {
 	    fprintf(stderr, "read function definition\n");
 	    fir->print(llvm::errs());

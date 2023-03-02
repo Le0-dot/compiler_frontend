@@ -7,10 +7,12 @@ ast::character_literal_expression::character_literal_expression(std::string&& va
 {}
 
 [[nodiscard]] auto ast::character_literal_expression::accept(value_visitor* v) const -> llvm::Value* {
+    fprintf(stderr, "char accept value\n");
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::character_literal_expression::accept(type_visitor* v) -> llvm::Type* {
+[[nodiscard]] auto ast::character_literal_expression::accept(type_visitor* v) -> types::type* {
+    fprintf(stderr, "char accept type\n");
     return v->visit(this);
 }
 

@@ -9,10 +9,12 @@ ast::binary_expression::binary_expression(std::string&& op, std::unique_ptr<expr
 {}
 
 [[nodiscard]] auto ast::binary_expression::accept(value_visitor* v) const -> llvm::Value* {
+    fprintf(stderr, "binary accept value\n");
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::binary_expression::accept(type_visitor* v) -> llvm::Type* {
+[[nodiscard]] auto ast::binary_expression::accept(type_visitor* v) -> types::type* {
+    fprintf(stderr, "binary accept type\n");
     return v->visit(this);
 }
 

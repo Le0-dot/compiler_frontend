@@ -7,10 +7,12 @@ ast::integer_literal_expression::integer_literal_expression(std::string&& value,
 {}
 
 [[nodiscard]] auto ast::integer_literal_expression::accept(value_visitor* v) const -> llvm::Value* {
+    fprintf(stderr, "int accept value\n");
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::integer_literal_expression::accept(type_visitor* v) -> llvm::Type* {
+[[nodiscard]] auto ast::integer_literal_expression::accept(type_visitor* v) -> types::type* {
+    fprintf(stderr, "int accept type\n");
     return v->visit(this);
 }
 

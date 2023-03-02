@@ -6,6 +6,8 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
 
+#include "types.hpp"
+
 namespace ast {
 
     class value_visitor;
@@ -13,15 +15,15 @@ namespace ast {
 
     class expression {
     private:
-	llvm::Type* _type{};
+	types::type* _type{};
 
     public:
 	virtual ~expression() = default;
 
-	[[nodiscard]] auto type() const -> llvm::Type*;
-	[[nodiscard]] auto type() -> llvm::Type*&;
+	[[nodiscard]] auto type()       -> types::type*&;
+	[[nodiscard]] auto type() const -> types::type* const &;
 	[[nodiscard]] virtual auto accept(value_visitor*) const -> llvm::Value* = 0;
-	[[nodiscard]] virtual auto accept(type_visitor*) -> llvm::Type* = 0;
+	[[nodiscard]] virtual auto accept(type_visitor*) -> types::type* = 0;
     };
 
 }

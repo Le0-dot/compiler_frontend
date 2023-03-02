@@ -16,7 +16,7 @@ namespace ast {
 	binary_expression(std::string&&, std::unique_ptr<expression>&&, std::unique_ptr<expression>&&);
 
 	[[nodiscard]] virtual auto accept(value_visitor*) const -> llvm::Value* override;
-	[[nodiscard]] virtual auto accept(type_visitor*) -> llvm::Type* override;
+	[[nodiscard]] virtual auto accept(type_visitor*) -> types::type* override;
 
 	[[nodiscard]] auto op()  const -> const std::string&;
 	[[nodiscard]] auto lhs() const -> const expression*;

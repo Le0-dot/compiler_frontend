@@ -38,7 +38,4 @@ public:
     virtual auto visit(const ast::function_expression*)          -> llvm::Value* override;
     virtual auto visit(const ast::block_expression*)             -> llvm::Value* override;
     virtual auto visit(const ast::implicit_cast*)                -> llvm::Value* override;
-
-private:
-    auto add_default_types() -> void;
 };

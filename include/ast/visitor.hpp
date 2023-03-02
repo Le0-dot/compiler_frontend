@@ -14,6 +14,8 @@
 #include "block.hpp"
 #include "implicit_cast.hpp"
 
+#include "types.hpp"
+
 namespace ast {
 
     class value_visitor {
@@ -35,16 +37,16 @@ namespace ast {
     class type_visitor {
     public:
 	virtual ~type_visitor() = default;
-	virtual auto visit(expression*)                   -> llvm::Type* = 0;
-	virtual auto visit(integer_literal_expression*)   -> llvm::Type* = 0;
-	virtual auto visit(floating_literal_expression*)  -> llvm::Type* = 0;
-	virtual auto visit(character_literal_expression*) -> llvm::Type* = 0;
-	virtual auto visit(string_literal_expression*)    -> llvm::Type* = 0;
-	virtual auto visit(variable_expression*)          -> llvm::Type* = 0;
-	virtual auto visit(binary_expression*)            -> llvm::Type* = 0;
-	virtual auto visit(call_expression*)              -> llvm::Type* = 0;
-	virtual auto visit(function_expression*)          -> llvm::Type* = 0;
-	virtual auto visit(block_expression*)             -> llvm::Type* = 0;
+	virtual auto visit(expression*)                   -> types::type* = 0;
+	virtual auto visit(integer_literal_expression*)   -> types::type* = 0;
+	virtual auto visit(floating_literal_expression*)  -> types::type* = 0;
+	virtual auto visit(character_literal_expression*) -> types::type* = 0;
+	virtual auto visit(string_literal_expression*)    -> types::type* = 0;
+	virtual auto visit(variable_expression*)          -> types::type* = 0;
+	virtual auto visit(binary_expression*)            -> types::type* = 0;
+	virtual auto visit(call_expression*)              -> types::type* = 0;
+	virtual auto visit(function_expression*)          -> types::type* = 0;
+	virtual auto visit(block_expression*)             -> types::type* = 0;
     };
 
 }

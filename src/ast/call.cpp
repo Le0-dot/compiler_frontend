@@ -7,10 +7,12 @@ ast::call_expression::call_expression(std::string&& callee, std::vector<std::uni
 {}
 
 [[nodiscard]] auto ast::call_expression::accept(value_visitor* v) const -> llvm::Value* {
+    fprintf(stderr, "call accept value\n");
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::call_expression::accept(type_visitor* v) -> llvm::Type* {
+[[nodiscard]] auto ast::call_expression::accept(type_visitor* v) -> types::type* {
+    fprintf(stderr, "call accept type\n");
     return v->visit(this);
 }
 

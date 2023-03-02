@@ -15,7 +15,7 @@ namespace ast {
 	integer_literal_expression(std::string&&, uint8_t);
 
 	[[nodiscard]] virtual auto accept(value_visitor*) const -> llvm::Value* override;
-	[[nodiscard]] virtual auto accept(type_visitor*) -> llvm::Type* override;
+	[[nodiscard]] virtual auto accept(type_visitor*) -> types::type* override;
 
 	[[nodiscard]] auto value() const -> int;
     };

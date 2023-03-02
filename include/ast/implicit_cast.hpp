@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "expression.hpp"
+#include "types.hpp"
 
 namespace ast {
 
@@ -20,10 +21,10 @@ namespace ast {
 	std::unique_ptr<expression> _subject;
 
     public:
-	implicit_cast(std::unique_ptr<expression>&&, llvm::Type*);
+	implicit_cast(std::unique_ptr<expression>&&, types::type*);
 
 	[[nodiscard]] virtual auto accept(value_visitor*) const -> llvm::Value* override;
-	[[nodiscard]] virtual auto accept(type_visitor*) -> llvm::Type* override;
+	[[nodiscard]] virtual auto accept(type_visitor*) -> types::type* override;
 
 	[[nodiscard]] auto subject() const -> const expression*;
     };

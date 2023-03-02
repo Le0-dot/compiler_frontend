@@ -24,7 +24,7 @@ namespace ast {
 		std::vector<std::string>&&, std::string&&, std::unique_ptr<block_expression>&&);
 
 	[[nodiscard]] virtual auto accept(value_visitor* v) const -> llvm::Value* override;
-	[[nodiscard]] virtual auto accept(type_visitor* v) -> llvm::Type* override;
+	[[nodiscard]] virtual auto accept(type_visitor* v) -> types::type* override;
 
 	[[nodiscard]] auto name()        const -> const std::string&;
 	[[nodiscard]] auto args()        const -> const std::vector<std::string>&;

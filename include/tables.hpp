@@ -7,18 +7,23 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 
+#include "types.hpp"
+
+template<typename K, typename V>
+using table_base = std::map<K, V>;
+
 template<typename Key, typename Value, Value DefaultValue = Value{}>
-class generic_table {
+class defaulted_table {
 private:
-    mutable std::map<Key, Value> _table{};
+    mutable table_base<Key, Value> _table{};
 
 public:
-    generic_table()                                        = default;
-    generic_table(const generic_table&)                    = default;
-    generic_table(generic_table&&)                         = default;
-    auto operator=(const generic_table&) -> generic_table& = default;
-    auto operator=(generic_table&&)      -> generic_table& = default;
-    ~generic_table()                                       = default;
+    defaulted_table()                                          = default;
+    defaulted_table(const defaulted_table&)                    = default;
+    defaulted_table(defaulted_table&&)                         = default;
+    auto operator=(const defaulted_table&) -> defaulted_table& = default;
+    auto operator=(defaulted_table&&)      -> defaulted_table& = default;
+    ~defaulted_table()                                         = default;
 
     auto operator[](Key&& key) -> Value& {
 	auto found = _table.find(std::forward<Key&&>(key));
@@ -49,10 +54,12 @@ public:
     }
 };
 
-using type_table            = generic_table<std::string, llvm::Type*>;
-using symbol_table          = generic_table<std::string, llvm::Type*>;
-using function_symbol_table = generic_table<std::string, llvm::FunctionType*>;
-using operator_table        = generic_table<std::string, uint8_t, 1>;
+using operator_table        = defaulted_table<std::string, uint8_t, 1>;
+
+using type_table            = table_base<std::string, std::unique_ptr<types::type>>;
+using function_type_table   = table_base<std::pair<std::vector<std::string>, std::string>, std::unique_ptr<types::function_type>>;
+using symbol_table          = table_base<std::string, types::type*>;
+using function_symbol_table = table_base<std::string, types::function_type*>;
 
 using cast_function = llvm::Value*(llvm::IRBuilderBase*, llvm::Value*);
-using cast_table    = std::map<std::pair<llvm::Type*, llvm::Type*>, std::function<cast_function>>;
+using cast_table    = table_base<std::pair<types::type*, types::type*>, std::function<cast_function>>;

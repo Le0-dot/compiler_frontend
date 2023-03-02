@@ -15,7 +15,7 @@ namespace ast {
 	block_expression(std::vector<std::unique_ptr<expression>>&&);
 
 	[[nodiscard]] virtual auto accept(value_visitor *) const -> llvm::Value* override;
-	[[nodiscard]] virtual auto accept(type_visitor *) -> llvm::Type* override;
+	[[nodiscard]] virtual auto accept(type_visitor *) -> types::type* override;
 
 	[[nodiscard]] auto expressions() const -> const std::vector<std::unique_ptr<expression>>&;
 

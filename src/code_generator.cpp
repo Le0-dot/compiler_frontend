@@ -12,7 +12,6 @@
 #include <llvm/IR/Verifier.h>
 
 #include "ast.hpp"
-#include "ast/implicit_cast.hpp"
 #include "code_generator.hpp"
 #include "global_context.hpp"
 
@@ -26,7 +25,7 @@ auto code_generator::visit(const ast::expression* expr) -> llvm::Value* {
 }
 
 auto code_generator::visit(const ast::integer_literal_expression* expr) -> llvm::Value* {
-    return llvm::ConstantInt::get(expr->type(), expr->value());
+    return llvm::ConstantInt::get(expr->type()->get(), expr->value());
 }
 
 auto code_generator::visit(const ast::floating_literal_expression* expr) -> llvm::Value* {
@@ -34,7 +33,7 @@ auto code_generator::visit(const ast::floating_literal_expression* expr) -> llvm
 }
 
 auto code_generator::visit(const ast::character_literal_expression* expr) -> llvm::Value* {
-    return llvm::ConstantInt::get(expr->type(), expr->value());
+    return llvm::ConstantInt::get(expr->type()->get(), expr->value());
 }
 
 auto code_generator::visit(const ast::string_literal_expression* expr) -> llvm::Value* {
@@ -93,9 +92,11 @@ auto code_generator::visit(const ast::call_expression* expr) -> llvm::Value* {
 }
 
 auto code_generator::visit(const ast::function_expression* expr) -> llvm::Value* {
-    llvm::FunctionType* func_type = static_cast<llvm::FunctionType*>(expr->type());
+    llvm::FunctionType* func_type = static_cast<llvm::FunctionType*>(expr->type()->get());
+    fprintf(stderr, "got function type\n");
     // create function
     llvm::Function* function = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, expr->name(), _module.get());
+    fprintf(stderr, "created function\n");
 
     // set arguments names, types and add fuction arguments to named values
     _named_values.clear();

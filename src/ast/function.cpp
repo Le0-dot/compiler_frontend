@@ -11,10 +11,12 @@ ast::function_expression::function_expression(std::string&& name, std::vector<st
 {}
 
 [[nodiscard]] auto ast::function_expression::accept(value_visitor* v) const -> llvm::Value* {
+    fprintf(stderr, "function accept value\n");
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::function_expression::accept(type_visitor* v) -> llvm::Type* {
+[[nodiscard]] auto ast::function_expression::accept(type_visitor* v) -> types::type* {
+    fprintf(stderr, "function accept type\n");
     return v->visit(this);
 }
 

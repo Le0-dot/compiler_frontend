@@ -6,10 +6,12 @@ ast::variable_expression::variable_expression(std::string&& name)
 {}
 
 [[nodiscard]] auto ast::variable_expression::accept(value_visitor* v) const -> llvm::Value* {
+    fprintf(stderr, "var accept value\n");
     return v->visit(this);
 }
 
-[[nodiscard]] auto ast::variable_expression::accept(type_visitor* v) -> llvm::Type* {
+[[nodiscard]] auto ast::variable_expression::accept(type_visitor* v) -> types::type* {
+    fprintf(stderr, "var accept type\n");
     return v->visit(this);
 }
 
