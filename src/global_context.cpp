@@ -1,5 +1,5 @@
 #include "global_context.hpp"
-#include <cstdio>
+#include <llvm/IR/IRBuilder.h>
 
 global_context::global_context() 
     : _context{std::make_unique<llvm::LLVMContext>()}
@@ -81,52 +81,164 @@ auto global_context::add_default_types() -> void {
     _types["float"]   = std::make_unique<types::type>(llvm::Type::getFloatTy(get()));
     _types["double"]  = std::make_unique<types::type>(llvm::Type::getDoubleTy(get()));
 
-    _types["char"]    = std::make_unique<types::type>(llvm::Type::getInt8Ty(get()));
+    _types["char"]    = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt8Ty(get()));
     _types["string"]  = std::make_unique<types::type>(llvm::Type::getInt8PtrTy(get()));
 }
 
 auto global_context::add_default_casts() -> void {
-    /*
-    // int to bool
-    _casts[std::make_pair(_types["int8"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int8"), 0, true), "cast");
-    };
-    _casts[std::make_pair(_types["int16"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int16"), 0, true), "cast");
-    };
-    _casts[std::make_pair(_types["int32"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int32"), 0, true), "cast");
-    };
-    _casts[std::make_pair(_types["int64"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int64"), 0, true), "cast");
-    };
-    _casts[std::make_pair(_types["int128"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int128"), 0, true), "cast");
+    // ---------------------------------------- bool ------------------------------------------
+    
+    // byte
+    _casts[std::make_pair(type("byte"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("byte")->get(), 0), "cast_byte_bool");
     };
 
-    // uint to bool
-    _casts[std::make_pair(_types["uint8"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint8"), 0, false), "cast");
+    // int
+    _casts[std::make_pair(type("int8"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int8")->get(), 0, true), "cast_int8_bool");
     };
-    _casts[std::make_pair(_types["uint16"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint16"), 0, false), "cast");
+    _casts[std::make_pair(type("int16"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int16")->get(), 0, true), "cast_int16_bool");
     };
-    _casts[std::make_pair(_types["uint32"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint32"), 0, false), "cast");
+    _casts[std::make_pair(type("int32"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int32")->get(), 0, true), "cast_int32_bool");
     };
-    _casts[std::make_pair(_types["uint64"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint64"), 0, false), "cast");
+    _casts[std::make_pair(type("int64"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int64")->get(), 0, true), "cast_int64_bool");
     };
-    _casts[std::make_pair(_types["uint128"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint128"), 0, false), "cast");
+    _casts[std::make_pair(type("int128"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int128")->get(), 0, true), "cast_int128_bool");
     };
 
-    // float to double
-    _casts[std::make_pair(_types["float"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateFCmpULT(v, llvm::ConstantFP::get(context(), llvm::APFloat(0.f)), "cast");
+    // uint
+    _casts[std::make_pair(type("uint8"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint8")->get(), 0), "cast_uint8_bool");
     };
-    _casts[std::make_pair(_types["double"], _types["bool"])] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateFCmpULT(v, llvm::ConstantFP::get(context(), llvm::APFloat(0.f)), "cast");
+    _casts[std::make_pair(type("uint16"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint16")->get(), 0), "cast_uint16_bool");
     };
-    */
+    _casts[std::make_pair(type("uint32"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint32")->get(), 0), "cast_uint32_bool");
+    };
+    _casts[std::make_pair(type("uint64"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint64")->get(), 0), "cast_uint64_bool");
+    };
+    _casts[std::make_pair(type("uint128"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint128")->get(), 0), "cast_uint128_bool");
+    };
+
+    // float
+    _casts[std::make_pair(type("float"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateFCmpULT(v, llvm::ConstantFP::get(context(), llvm::APFloat(0.f)), "cast_float_bool");
+    };
+    _casts[std::make_pair(type("double"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateFCmpULT(v, llvm::ConstantFP::get(context(), llvm::APFloat(0.f)), "cast_double_bool");
+    };
+
+    // string
+    _casts[std::make_pair(type("char"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("char")->get(), 0), "cast_char_bool");
+    };
+    _casts[std::make_pair(type("string"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return nullptr; // placeholder
+    };
+
+
+    // ---------------------------------------- byte ------------------------------------------
+
+    // bool
+    _casts[std::make_pair(type("bool"), type("byte"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateIntCast(v, type("byte")->get(), false, "cast_bool_byte");
+    };
+
+    // int8
+    _casts[std::make_pair(type("int8"), type("byte"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateIntCast(v, type("byte")->get(), true, "cast_int8_byte");
+    };
+
+    // uint8
+    _casts[std::make_pair(type("uint8"), type("byte"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateIntCast(v, type("byte")->get(), false, "cast_uint8_byte");
+    };
+
+    // char
+    _casts[std::make_pair(type("char"), type("byte"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateIntCast(v, type("byte")->get(), false, "cast_char_byte");
+    };
+
+
+    // ---------------------------------------- int8 ------------------------------------------
+
+    // bool
+    _casts[std::make_pair(type("bool"), type("int8"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateIntCast(v, type("int8")->get(), false, "cast_bool_int8");
+    };
+
+
+    // ---------------------------------------- uint8 -----------------------------------------
+
+    // bool
+    _casts[std::make_pair(type("bool"), type("uint8"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateIntCast(v, type("uint8")->get(), false, "cast_bool_uint8");
+    };
+
+    // byte
+    _casts[std::make_pair(type("byte"), type("uint8"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateIntCast(v, type("uint8")->get(), false, "cast_byte_uint8");
+    };
+
+    // char
+    _casts[std::make_pair(type("char"), type("uint8"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	return b->CreateIntCast(v, type("uint8")->get(), false, "cast_char_uint8");
+    };
+
+
+    // ---------------------------------------- int16 -----------------------------------------
+                                                                                              
+                                                                                              
+                                                                                              
+    // ---------------------------------------- uint16 ----------------------------------------
+                                                                                              
+                                                                                              
+                                                                                              
+    // ---------------------------------------- int32 -----------------------------------------
+                                                                                              
+                                                                                              
+                                                                                              
+    // ---------------------------------------- uint32 ----------------------------------------
+                                                                                              
+                                                                                              
+                                                                                              
+    // ---------------------------------------- int64 -----------------------------------------
+
+
+
+    // ---------------------------------------- uint64 ----------------------------------------
+
+
+
+    // ---------------------------------------- int128 ----------------------------------------
+
+
+
+    // ---------------------------------------- uint128 ---------------------------------------
+
+
+
+    // ---------------------------------------- float -----------------------------------------
+
+
+
+    // ---------------------------------------- double ----------------------------------------
+
+
+
+    // ---------------------------------------- char ------------------------------------------
+
+
+
+    // ---------------------------------------- string ----------------------------------------
+
+
+
 }
