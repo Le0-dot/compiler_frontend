@@ -6,9 +6,9 @@ namespace types {
 
     class unsigned_integer_type : public integer_type {
     public:
-	unsigned_integer_type(llvm::IntegerType*);
+	unsigned_integer_type(llvm::IntegerType*, std::string&&);
 
-	unsigned_integer_type()                                                = default;
+	unsigned_integer_type()                                                = delete;
 	unsigned_integer_type(const unsigned_integer_type&)                    = default;
 	unsigned_integer_type(unsigned_integer_type&&)                         = default;
 	auto operator=(const unsigned_integer_type&) -> unsigned_integer_type& = default;

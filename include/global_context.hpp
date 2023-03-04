@@ -40,4 +40,6 @@ private:
 
     auto add_default_types() -> void;
     auto add_default_casts() -> void;
+    auto add_int_cast(std::string&&, std::string&&) -> void;
+    auto add_fp_cast(std::string&&, std::string&&) -> void;
 };

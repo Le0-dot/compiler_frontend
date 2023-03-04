@@ -1,7 +1,8 @@
 #include "type/type.hpp"
 
-types::type::type(llvm::Type* type)
+types::type::type(llvm::Type* type, std::string&& name)
     : _type{type}
+    , _name{std::move(name)}
 {}
 
 auto types::type::operator==(const type& other) const noexcept -> bool {
@@ -18,6 +19,10 @@ types::type::operator bool() const noexcept {
 
 [[nodiscard]] auto types::type::get() const noexcept -> llvm::Type* {
     return _type;
+}
+
+[[nodiscard]] auto types::type::name() const noexcept -> const std::string& {
+    return _name;
 }
 
 [[nodiscard]] auto types::type::is_signed() const noexcept -> bool {

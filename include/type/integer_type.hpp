@@ -8,7 +8,7 @@ namespace types {
 
     class integer_type : public type {
     public:
-	integer_type(llvm::IntegerType*);
+	integer_type(llvm::IntegerType*, std::string&&);
 
 	virtual ~integer_type() = default;
 

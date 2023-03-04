@@ -7,9 +7,10 @@ namespace types {
     class type {
     private:
 	llvm::Type* _type{};
+	std::string _name{};
 
     public:
-	type(llvm::Type*);
+	type(llvm::Type*, std::string&&);
 	
 	type()                               = default;
 	type(const type&)                    = default;
@@ -23,6 +24,7 @@ namespace types {
 	explicit operator bool() const noexcept;
 
 	[[nodiscard]] auto get() const noexcept -> llvm::Type*;
+	[[nodiscard]] auto name() const noexcept -> const std::string&;
 
 	[[nodiscard]] virtual auto is_signed() const noexcept -> bool;
 	[[nodiscard]] auto is_integral()       const noexcept -> bool;

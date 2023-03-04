@@ -4,8 +4,11 @@
 global_context::global_context() 
     : _context{std::make_unique<llvm::LLVMContext>()}
 {
+    fprintf(stderr, "creating global_context\n");
     add_default_types();
+    fprintf(stderr, "added default types\n");
     add_default_casts();
+    fprintf(stderr, "added default casts\n");
 }
 
 auto global_context::instance() -> global_context& {
@@ -58,187 +61,248 @@ auto global_context::instance() -> global_context& {
 }
 
 auto global_context::add_default_types() -> void {
-    _types[""]        = std::make_unique<types::type>(llvm::Type::getVoidTy(get()));
+    _types[""]        = std::make_unique<types::type>(llvm::Type::getVoidTy(get()), "(void)");
 
-    _types["bool"]    = std::make_unique<types::type>(llvm::Type::getInt1Ty(get()));
+    _types["bool"]    = std::make_unique<types::type>(llvm::Type::getInt1Ty(get()), "bool");
 
-    _types["byte"]    = std::make_unique<types::type>(llvm::Type::getInt8Ty(get()));
+    _types["byte"]    = std::make_unique<types::type>(llvm::Type::getInt8Ty(get()), "byte");
 
-    _types["int"]     = std::make_unique<types::signed_integer_type>(llvm::Type::getInt32Ty(get()));
-    _types["int8"]    = std::make_unique<types::signed_integer_type>(llvm::Type::getInt8Ty(get()));
-    _types["int16"]   = std::make_unique<types::signed_integer_type>(llvm::Type::getInt16Ty(get()));
-    _types["int32"]   = std::make_unique<types::signed_integer_type>(llvm::Type::getInt32Ty(get()));
-    _types["int64"]   = std::make_unique<types::signed_integer_type>(llvm::Type::getInt64Ty(get()));
-    _types["int128"]  = std::make_unique<types::signed_integer_type>(llvm::Type::getInt128Ty(get()));
+    _types["int"]     = std::make_unique<types::signed_integer_type>(llvm::Type::getInt32Ty(get()), "int");
+    _types["int8"]    = std::make_unique<types::signed_integer_type>(llvm::Type::getInt8Ty(get()), "int8");
+    _types["int16"]   = std::make_unique<types::signed_integer_type>(llvm::Type::getInt16Ty(get()), "int16");
+    _types["int32"]   = std::make_unique<types::signed_integer_type>(llvm::Type::getInt32Ty(get()), "int32");
+    _types["int64"]   = std::make_unique<types::signed_integer_type>(llvm::Type::getInt64Ty(get()), "int64");
+    _types["int128"]  = std::make_unique<types::signed_integer_type>(llvm::Type::getInt128Ty(get()), "int128");
 
-    _types["uint"]    = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt32Ty(get()));
-    _types["uint8"]   = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt8Ty(get()));
-    _types["uint16"]  = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt16Ty(get()));
-    _types["uint32"]  = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt32Ty(get()));
-    _types["uint64"]  = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt64Ty(get()));
-    _types["uint128"] = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt128Ty(get()));
+    _types["uint"]    = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt32Ty(get()), "uint");
+    _types["uint8"]   = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt8Ty(get()), "uint8");
+    _types["uint16"]  = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt16Ty(get()), "uint16");
+    _types["uint32"]  = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt32Ty(get()), "uint32");
+    _types["uint64"]  = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt64Ty(get()), "uint64");
+    _types["uint128"] = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt128Ty(get()), "uint128");
 
-    _types["float"]   = std::make_unique<types::type>(llvm::Type::getFloatTy(get()));
-    _types["double"]  = std::make_unique<types::type>(llvm::Type::getDoubleTy(get()));
+    _types["float"]   = std::make_unique<types::type>(llvm::Type::getFloatTy(get()), "float");
+    _types["double"]  = std::make_unique<types::type>(llvm::Type::getDoubleTy(get()), "double");
 
-    _types["char"]    = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt8Ty(get()));
-    _types["string"]  = std::make_unique<types::type>(llvm::Type::getInt8PtrTy(get()));
+    _types["char"]    = std::make_unique<types::unsigned_integer_type>(llvm::Type::getInt8Ty(get()), "char");
+    _types["string"]  = std::make_unique<types::type>(llvm::Type::getInt8PtrTy(get()), "string");
 }
 
 auto global_context::add_default_casts() -> void {
     // ---------------------------------------- bool ------------------------------------------
-    
-    // byte
-    _casts[std::make_pair(type("byte"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("byte")->get(), 0), "cast_byte_bool");
-    };
 
-    // int
-    _casts[std::make_pair(type("int8"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int8")->get(), 0, true), "cast_int8_bool");
-    };
-    _casts[std::make_pair(type("int16"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int16")->get(), 0, true), "cast_int16_bool");
-    };
-    _casts[std::make_pair(type("int32"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int32")->get(), 0, true), "cast_int32_bool");
-    };
-    _casts[std::make_pair(type("int64"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int64")->get(), 0, true), "cast_int64_bool");
-    };
-    _casts[std::make_pair(type("int128"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("int128")->get(), 0, true), "cast_int128_bool");
-    };
+    auto from = "bool";
+    std::vector cast_to = {"byte", "int8", "int16", "int32", "int64", "int128", "uint8", "uint16", "uint32", "uint64", "uint128"};
+    const std::array cast_to_fp = {"float", "double"};
 
-    // uint
-    _casts[std::make_pair(type("uint8"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint8")->get(), 0), "cast_uint8_bool");
-    };
-    _casts[std::make_pair(type("uint16"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint16")->get(), 0), "cast_uint16_bool");
-    };
-    _casts[std::make_pair(type("uint32"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint32")->get(), 0), "cast_uint32_bool");
-    };
-    _casts[std::make_pair(type("uint64"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint64")->get(), 0), "cast_uint64_bool");
-    };
-    _casts[std::make_pair(type("uint128"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("uint128")->get(), 0), "cast_uint128_bool");
-    };
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
 
-    // float
-    _casts[std::make_pair(type("float"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateFCmpULT(v, llvm::ConstantFP::get(context(), llvm::APFloat(0.f)), "cast_float_bool");
-    };
-    _casts[std::make_pair(type("double"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateFCmpULT(v, llvm::ConstantFP::get(context(), llvm::APFloat(0.f)), "cast_double_bool");
-    };
-
-    // string
-    _casts[std::make_pair(type("char"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateICmpNE(v, llvm::ConstantInt::get(type("char")->get(), 0), "cast_char_bool");
-    };
-    _casts[std::make_pair(type("string"), type("bool"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return nullptr; // placeholder
-    };
-
+    // maybe add bool to float casts
 
     // ---------------------------------------- byte ------------------------------------------
 
-    // bool
-    _casts[std::make_pair(type("bool"), type("byte"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateIntCast(v, type("byte")->get(), false, "cast_bool_byte");
-    };
+    from = "byte";
+    cast_to = {"bool", "int8", "int16", "int32", "int64", "int128", "uint8", "uint16", "uint32", "uint64", "uint128", "char"};
 
-    // int8
-    _casts[std::make_pair(type("int8"), type("byte"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateIntCast(v, type("byte")->get(), true, "cast_int8_byte");
-    };
-
-    // uint8
-    _casts[std::make_pair(type("uint8"), type("byte"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateIntCast(v, type("byte")->get(), false, "cast_uint8_byte");
-    };
-
-    // char
-    _casts[std::make_pair(type("char"), type("byte"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateIntCast(v, type("byte")->get(), false, "cast_char_byte");
-    };
-
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
 
     // ---------------------------------------- int8 ------------------------------------------
 
-    // bool
-    _casts[std::make_pair(type("bool"), type("int8"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateIntCast(v, type("int8")->get(), false, "cast_bool_int8");
-    };
+    from = "int8";
+    cast_to = {"bool", "byte", "int16", "int32", "int64", "int128"};
+
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
 
 
     // ---------------------------------------- uint8 -----------------------------------------
 
-    // bool
-    _casts[std::make_pair(type("bool"), type("uint8"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateIntCast(v, type("uint8")->get(), false, "cast_bool_uint8");
-    };
+    from = "uint8";
+    cast_to = {"bool", "byte", "int16", "int32", "int64", "int128", "uint16", "uint32", "uint64", "uint128"};
 
-    // byte
-    _casts[std::make_pair(type("byte"), type("uint8"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateIntCast(v, type("uint8")->get(), false, "cast_byte_uint8");
-    };
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
 
-    // char
-    _casts[std::make_pair(type("char"), type("uint8"))] = [] (llvm::IRBuilderBase* b, llvm::Value* v) {
-	return b->CreateIntCast(v, type("uint8")->get(), false, "cast_char_uint8");
-    };
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
 
 
     // ---------------------------------------- int16 -----------------------------------------
                                                                                               
-                                                                                              
-                                                                                              
+    from = "int16";
+    cast_to = {"bool", "int32", "int64", "int128"};
+
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
+
+
     // ---------------------------------------- uint16 ----------------------------------------
                                                                                               
-                                                                                              
-                                                                                              
+    from = "uint16";
+    cast_to = {"bool", "int32", "int64", "int128", "uint32", "uint64", "uint128"};
+
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
+
+
     // ---------------------------------------- int32 -----------------------------------------
                                                                                               
-                                                                                              
+    from = "int32";
+    cast_to = {"bool", "int64", "int128"};
+
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
+
                                                                                               
     // ---------------------------------------- uint32 ----------------------------------------
                                                                                               
-                                                                                              
+    from = "uint32";
+    cast_to = {"bool", "int64", "int128", "uint64", "uint128"};
+
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
+
                                                                                               
     // ---------------------------------------- int64 -----------------------------------------
 
+    from = "int64";
+    cast_to = {"bool", "int128"};
+
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
 
 
     // ---------------------------------------- uint64 ----------------------------------------
 
+    from = "uint64";
+    cast_to = {"bool", "int128", "uint128"};
+
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
 
 
     // ---------------------------------------- int128 ----------------------------------------
 
+    from = "int128";
+
+    add_int_cast(from, "bool");
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
 
 
     // ---------------------------------------- uint128 ---------------------------------------
 
+    from = "uint128";
+
+    add_int_cast(from, "bool");
+
+    for(const char* to: cast_to_fp)
+	add_fp_cast(from, to);
 
 
     // ---------------------------------------- float -----------------------------------------
 
+    from = "float";
 
+    add_int_cast(from, "bool");
+    add_fp_cast(from, "double");
 
     // ---------------------------------------- double ----------------------------------------
 
+    add_fp_cast("double", "bool");
 
 
     // ---------------------------------------- char ------------------------------------------
 
+    from = "char";
+    cast_to = {"bool", "byte"};
+
+    for(const char* to: cast_to)
+	add_int_cast(from, to);
 
 
     // ---------------------------------------- string ----------------------------------------
 
+    // add string to bool
 
+}
 
+namespace {
+
+    auto make_cast_name(const std::string& from, const std::string& to) -> std::string {
+	std::string name(6 + from.size() + to.size(), '\0'); // cast_`FROM`_`TO`
+	name = "cast_";
+	name += from;
+	name += '_';
+	name += to;
+	return name;
+    }
+
+}
+
+auto global_context::add_int_cast(std::string&& from, std::string&& to) -> void {
+    auto name = make_cast_name(from, to);
+
+    auto from_type = get_type(std::move(from));
+    auto to_type = get_type(std::move(to));
+    auto key = std::make_pair(from_type, to_type);
+    auto is_signed = from_type->is_signed() && to_type->is_signed();
+
+    if(to == "bool")
+	_casts[key] = [llvm_type = to_type->get(), name = std::move(name)] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	    return b->CreateICmpNE(v, llvm::ConstantInt::get(llvm_type, 0), name);
+	};
+    else
+	_casts[key] = [llvm_type = to_type->get(), name = std::move(name), is_signed] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	    return b->CreateIntCast(v, llvm_type, is_signed, name);
+	};
+}
+
+auto global_context::add_fp_cast(std::string&& from, std::string&& to) -> void {
+    auto name = make_cast_name(from, to);
+
+    auto from_type = get_type(std::move(from));
+    auto to_type = get_type(std::move(to));
+    auto key = std::make_pair(from_type, to_type);
+
+    if(from == "float" && to == "double")
+	_casts[key] = [llvm_type = to_type->get(), name = std::move(name)] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	    return b->CreateFPExt(v, llvm_type, name);
+	};
+    else if(to == "bool")
+	_casts[key] = [&context = get(), name = std::move(name)] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	    return b->CreateFCmpULT(v, llvm::ConstantFP::get(context, llvm::APFloat(0.f)), name);
+	};
+    else if(from_type->is_signed())
+	_casts[key] = [llvm_type = to_type->get(), name = std::move(name)] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	    return b->CreateSIToFP(v, llvm_type, name);
+	};
+    else
+	_casts[key] = [llvm_type = to_type->get(), name = std::move(name)] (llvm::IRBuilderBase* b, llvm::Value* v) {
+	    return b->CreateUIToFP(v, llvm_type, name);
+	};
 }

@@ -14,6 +14,7 @@
 #include "ast.hpp"
 #include "code_generator.hpp"
 #include "global_context.hpp"
+#include "tables.hpp"
 
 code_generator::code_generator(const std::string& module_name)
     : _module{std::make_unique<llvm::Module>(module_name, global_context::context())}
@@ -133,5 +134,7 @@ auto code_generator::visit(const ast::block_expression* expr) -> llvm::Value* {
 }
 
 auto code_generator::visit(const ast::implicit_cast* cast) -> llvm::Value* {
-    return cast->subject()->accept(this); // placeholder
+    llvm::Value* subject_value = cast->subject()->accept(this);
+    std::function<cast_function> cast_func = global_context::cast(cast->subject()->type(), cast->type());
+    return cast_func(_builder.get(), subject_value);
 }

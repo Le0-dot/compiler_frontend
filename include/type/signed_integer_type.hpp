@@ -6,9 +6,9 @@ namespace types {
 
     class signed_integer_type : public integer_type {
     public:
-	signed_integer_type(llvm::IntegerType*);
+	signed_integer_type(llvm::IntegerType*, std::string&&);
 
-	signed_integer_type()                                              = default;
+	signed_integer_type()                                              = delete;
 	signed_integer_type(const signed_integer_type&)                    = default;
 	signed_integer_type(signed_integer_type&&)                         = default;
 	auto operator=(const signed_integer_type&) -> signed_integer_type& = default;
