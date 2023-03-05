@@ -1,3 +1,6 @@
+#include <limits>
+#include <ranges>
+
 #include "semantic_analyzer.hpp"
 #include "global_context.hpp"
 
@@ -9,6 +12,15 @@ namespace {
 	};
     }
 
+    template<std::ranges::forward_range Range, typename Value>
+    requires std::same_as<std::ranges::range_value_t<Range>, std::tuple<Value, Value, std::string>>
+    auto find_in_range_or_default(Range&& range, const Value& val, const std::string& _default) {
+	auto res = std::ranges::find_if(std::forward<Range&&>(range), [&val] (auto t) {
+	    const auto& [lower, upper, _] = t;
+	    return lower <= val && val <= upper;
+	});
+	return res == std::end(range) ? _default : get<2>(*res);
+    }
 }
 
 auto semantic_analyzer::visit(ast::expression* expr) -> types::type* {
@@ -16,7 +28,28 @@ auto semantic_analyzer::visit(ast::expression* expr) -> types::type* {
 }
 
 auto semantic_analyzer::visit(ast::integer_literal_expression* expr) -> types::type* {
-    return expr->type() = global_context::type("int32");
+    using namespace std::literals;
+    const static std::vector<std::tuple<ast::integer_container, ast::integer_container, std::string>> unsigned_ranges {
+	{"0", std::to_string(std::numeric_limits<uint8_t>::max()), "uint8"},
+	{"0", std::to_string(std::numeric_limits<uint16_t>::max()), "uint16"},
+	{"0", std::to_string(std::numeric_limits<uint32_t>::max()), "uint32"},
+	{"0", std::to_string(std::numeric_limits<uint64_t>::max()), "uint64"},
+    };
+    const static std::vector<std::tuple<ast::integer_container, ast::integer_container, std::string>> signed_ranges {
+	{std::to_string(std::numeric_limits<int8_t>::min()), std::to_string(std::numeric_limits<int8_t>::max()), "int8"},
+	{std::to_string(std::numeric_limits<int16_t>::min()), std::to_string(std::numeric_limits<int16_t>::max()), "int16"},
+	{std::to_string(std::numeric_limits<int32_t>::min()), std::to_string(std::numeric_limits<int32_t>::max()), "int32"},
+	{std::to_string(std::numeric_limits<int64_t>::min()), std::to_string(std::numeric_limits<int64_t>::max()), "int64"},
+    };
+
+    types::type* final_type{};
+
+    if(const auto& v = expr->value(); v >= "0"s)
+	final_type = global_context::type(find_in_range_or_default(unsigned_ranges, v, "uint128"));
+    else
+	final_type = global_context::type(find_in_range_or_default(signed_ranges, v, "int128"));
+
+    return expr->type() = final_type;
 }
 
 auto semantic_analyzer::visit(ast::floating_literal_expression* expr) -> types::type* {
@@ -52,6 +85,11 @@ auto semantic_analyzer::visit(ast::binary_expression* expr) -> types::type* {
 	common_type = lhs_type;
     } else {
 	fprintf(stderr, "error: unable to cast binary expression to common type: \"%s\" and \"%s\"", lhs_type->name().data(), rhs_type->name().data());
+    }
+
+    if(!global_context::binary_operation(expr->op(), common_type)) {
+	fprintf(stderr, "error: no suitable \"%s\" operation for type \"%s\"", expr->op().data(), common_type->name().data());
+	return nullptr;
     }
 
     return expr->type() = common_type;

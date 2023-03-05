@@ -1,5 +1,40 @@
 #include "global_context.hpp"
+#include "tables.hpp"
 #include <llvm/IR/IRBuilder.h>
+#include <unordered_map>
+
+namespace {
+
+    auto make_cast_name(const std::string& from, const std::string& to) -> std::string {
+	std::string name(6 + from.size() + to.size(), 0); // cast_`FROM`_`TO`
+	name = "cast_";
+	name += from;
+	name += '_';
+	name += to;
+	return name;
+    }
+
+    auto make_operation_name(const std::string& op, const std::string& type) -> std::string {
+	std::string name(1 + op.size() + type.size(), 0); // `OPERATION`_`TYPE`
+	name = op;
+	name += '_';
+	name += type;
+	return name;
+    }
+
+    auto normalise_type(const std::string& type) -> std::string {
+	static const type_normalization_table normalization_table = {
+	    {"int", "int32"},
+	    {"uint", "uint32"},
+	};
+
+	if(auto it = normalization_table.find(type); it != normalization_table.end())
+	    return it->second;
+	return type;
+    }
+
+}
+
 
 global_context::global_context() 
     : _context{std::make_unique<llvm::LLVMContext>()}
@@ -9,6 +44,7 @@ global_context::global_context()
     fprintf(stderr, "added default types\n");
     add_default_casts();
     fprintf(stderr, "added default casts\n");
+    add_default_operations();
 }
 
 auto global_context::instance() -> global_context& {
@@ -25,7 +61,7 @@ auto global_context::instance() -> global_context& {
 }
 
 [[nodiscard]] auto global_context::get_type(const std::string& type_name) -> types::type* {
-    return _types[type_name].get();
+    return _types[normalise_type(type_name)].get();
 }
 
 [[nodiscard]] auto global_context::type(const std::string& type_name) -> types::type* {
@@ -58,6 +94,14 @@ auto global_context::instance() -> global_context& {
 
 [[nodiscard]] auto global_context::cast(types::type* from, types::type* to) -> const std::function<cast_function>& {
     return instance().get_cast(from, to);
+}
+
+[[nodiscard]] auto global_context::get_binary_operation(const std::string& op, types::type* type) -> const std::function<binary_operation_function>& {
+    return _binary_operation_table[std::make_pair(op, type)];
+}
+
+[[nodiscard]] auto global_context::binary_operation(const std::string& op, types::type* type) -> const std::function<binary_operation_function>& {
+    return instance().get_binary_operation(op, type);
 }
 
 auto global_context::add_default_types() -> void {
@@ -251,16 +295,65 @@ auto global_context::add_default_casts() -> void {
 
 }
 
-namespace {
+auto global_context::add_default_operations() -> void {
+    // --------------------------------------- addition ---------------------------------------
+    
+    for(const char* type: {"byte", "int8", "int16", "int32", "int64", "int128", "uint8", "uint16", "uint32", "uint64", "uint128"})
+	_binary_operation_table[std::make_pair("+", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateAdd(lhs, rhs, "add");
+	};
 
-    auto make_cast_name(const std::string& from, const std::string& to) -> std::string {
-	std::string name(6 + from.size() + to.size(), '\0'); // cast_`FROM`_`TO`
-	name = "cast_";
-	name += from;
-	name += '_';
-	name += to;
-	return name;
-    }
+    for(const char* type: {"float", "double"})
+	_binary_operation_table[std::make_pair("+", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateFAdd(lhs, rhs, "add");
+	};
+
+
+    // ------------------------------------- substruction --------------------------------------
+    
+    for(const char* type: {"byte", "int8", "int16", "int32", "int64", "int128", "uint8", "uint16", "uint32", "uint64", "uint128"})
+	_binary_operation_table[std::make_pair("-", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateSub(lhs, rhs, "sub");
+	};
+
+    for(const char* type: {"float", "double"})
+	_binary_operation_table[std::make_pair("-", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateFSub(lhs, rhs, "sub");
+	};
+
+
+
+    // ------------------------------------- mutiplication --------------------------------------
+    
+    for(const char* type: {"byte", "int8", "int16", "int32", "int64", "int128", "uint8", "uint16", "uint32", "uint64", "uint128"})
+	_binary_operation_table[std::make_pair("*", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateMul(lhs, rhs, "mul");
+	};
+
+    for(const char* type: {"float", "double"})
+	_binary_operation_table[std::make_pair("*", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateFMul(lhs, rhs, "mul");
+	};
+
+
+
+    // --------------------------------------- division ----------------------------------------
+    
+    for(const char* type: {"int8", "int16", "int32", "int64", "int128"})
+	_binary_operation_table[std::make_pair("/", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateSDiv(lhs, rhs, "div");
+	};
+
+    for(const char* type: {"byte", "uint8", "uint16", "uint32", "uint64", "uint128"})
+	_binary_operation_table[std::make_pair("/", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateUDiv(lhs, rhs, "div");
+	};
+
+    for(const char* type: {"float", "double"})
+	_binary_operation_table[std::make_pair("/", get_type(type))] = [] (llvm::IRBuilderBase* b, llvm::Value* lhs, llvm::Value* rhs) {
+	    return b->CreateFDiv(lhs, rhs, "div");
+	};
+
 
 }
 

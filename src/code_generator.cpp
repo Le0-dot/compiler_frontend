@@ -26,7 +26,9 @@ auto code_generator::visit(const ast::expression* expr) -> llvm::Value* {
 }
 
 auto code_generator::visit(const ast::integer_literal_expression* expr) -> llvm::Value* {
-    return llvm::ConstantInt::get(expr->type()->get(), expr->value());
+    fprintf(stderr, "%s - %d - %s", expr->value().data(), expr->radix(), expr->type()->name().data());
+    auto type = static_cast<llvm::IntegerType*>(expr->type()->get());
+    return llvm::ConstantInt::get(type, expr->value(), expr->radix());
 }
 
 auto code_generator::visit(const ast::floating_literal_expression* expr) -> llvm::Value* {
@@ -55,19 +57,8 @@ auto code_generator::visit(const ast::binary_expression* expr) -> llvm::Value* {
     if(!lhs || !rhs)
 	return nullptr;
 
-    switch (expr->op()[0]) {
-	case '+':
-	    return _builder->CreateFAdd(lhs, rhs, "addtmp");
-	case '-':
-	    return _builder->CreateFSub(lhs, rhs, "subtmp");
-	case '*':
-	    return _builder->CreateFMul(lhs, rhs, "multmp");
-	case '/':
-	    return _builder->CreateFDiv(lhs, rhs, "divtmp");
-	default:
-	    fprintf(stderr, "error: to be done");
-	    return nullptr;
-    }
+    auto op_func = global_context::binary_operation(expr->op(), expr->type());
+    return op_func(_builder.get(), lhs, rhs);
 }
 
 auto code_generator::visit(const ast::call_expression* expr) -> llvm::Value* {
