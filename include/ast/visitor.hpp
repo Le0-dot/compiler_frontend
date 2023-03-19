@@ -18,6 +18,9 @@
 
 namespace ast {
 
+    /**
+     * Value visitor base class 
+     */
     class value_visitor {
     public:
 	virtual ~value_visitor() = default;
@@ -34,6 +37,9 @@ namespace ast {
 	virtual auto visit(const implicit_cast*)                -> llvm::Value* = 0;
     };
 
+    /**
+     * Type visitor base class 
+     */
     class type_visitor {
     public:
 	virtual ~type_visitor() = default;
